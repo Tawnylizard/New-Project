@@ -1,0 +1,112 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: klyovo_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: klyovo
+      POSTGRES_USER: klyovo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-klyovo_dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U klyovo -d klyovo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: klyovo_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_dev}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--pass", "${REDIS_PASSWORD:-redis_dev}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: development
+    container_name: klyovo_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://klyovo:${POSTGRES_PASSWORD:-klyovo_dev}@postgres:5432/klyovo
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_dev}@redis:6379
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production}
+      YANDEX_GPT_API_KEY: ${YANDEX_GPT_API_KEY}
+      GIGACHAT_API_KEY: ${GIGACHAT_API_KEY}
+      YUKASSA_SHOP_ID: ${YUKASSA_SHOP_ID}
+      YUKASSA_SECRET_KEY: ${YUKASSA_SECRET_KEY}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/api/src:/app/apps/api/src:ro
+      - ./packages:/app/packages:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  tma:
+    build:
+      context: .
+      dockerfile: apps/tma/Dockerfile
+      target: development
+    container_name: klyovo_tma
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:3000
+      VITE_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-klyovo_bot}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./apps/tma/src:/app/apps/tma/src:ro
+    depends_on:
+      - api
+
+  bot:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: development
+    container_name: klyovo_bot
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://klyovo:${POSTGRES_PASSWORD:-klyovo_dev}@postgres:5432/klyovo
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_dev}@redis:6379
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production}
+    command: ["node", "dist/bot/index.js"]
+    volumes:
+      - ./apps/bot/src:/app/apps/bot/src:ro
+
+volumes:
+  postgres_data:
+  redis_data:
