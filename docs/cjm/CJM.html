@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CJM — Клёво (Российский Cleo AI)</title>
+  <style>
+    :root {
+      --primary: #7C3AED;
+      --primary-light: #EDE9FE;
+      --accent: #F59E0B;
+      --accent-light: #FEF3C7;
+      --success: #10B981;
+      --success-light: #D1FAE5;
+      --danger: #EF4444;
+      --danger-light: #FEE2E2;
+      --neutral: #6B7280;
+      --neutral-light: #F3F4F6;
+      --dark: #111827;
+      --white: #FFFFFF;
+      --border: #E5E7EB;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #F9FAFB;
+      color: var(--dark);
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, #5B21B6 100%);
+      color: white;
+      padding: 48px 24px 36px;
+      text-align: center;
+    }
+    .header .logo { font-size: 2.5rem; font-weight: 900; letter-spacing: -1px; }
+    .header .logo span { color: var(--accent); }
+    .header .subtitle { font-size: 1.1rem; opacity: 0.85; margin-top: 8px; }
+    .header .meta { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+    .header .badge {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    /* Nav */
+    .nav {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .nav ul {
+      display: flex;
+      list-style: none;
+      gap: 0;
+      overflow-x: auto;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .nav ul li a {
+      display: block;
+      padding: 14px 16px;
+      text-decoration: none;
+      color: var(--neutral);
+      font-size: 0.85rem;
+      font-weight: 500;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .nav ul li a:hover { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* Container */
+    .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+    /* Section */
+    .section { margin-bottom: 64px; }
+    .section-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--dark);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-subtitle { color: var(--neutral); font-size: 0.95rem; margin-bottom: 28px; }
+
+    /* Trends grid */
+    .trends-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .trend-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: box-shadow 0.2s;
+    }
+    .trend-card:hover { box-shadow: var(--shadow); }
+    .trend-card .trend-number {
+      width: 28px; height: 28px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 10px;
+    }
+    .trend-card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+    .trend-card p { font-size: 0.85rem; color: var(--neutral); margin-bottom: 10px; }
+    .trend-card a {
+      font-size: 0.8rem;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .trend-card a:hover { text-decoration: underline; }
+    .priority-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+    .p0 { background: #FEE2E2; color: #991B1B; }
+    .p1 { background: #FEF3C7; color: #92400E; }
+    .p2 { background: #D1FAE5; color: #065F46; }
+
+    /* Personas */
+    .personas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .persona-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .persona-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+    }
+    .persona-avatar {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+    .persona-name { font-weight: 800; font-size: 1.1rem; }
+    .persona-age { color: var(--neutral); font-size: 0.85rem; margin-bottom: 12px; }
+    .persona-item {
+      font-size: 0.85rem;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--neutral-light);
+      display: flex;
+      gap: 8px;
+    }
+    .persona-item:last-child { border-bottom: none; }
+    .persona-item .label { color: var(--neutral); min-width: 60px; font-size: 0.78rem; }
+
+    /* CJM Variants tabs */
+    .tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 32px; overflow-x: auto; }
+    .tab-btn {
+      padding: 12px 24px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--neutral);
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Journey flow */
+    .journey { display: flex; flex-direction: column; gap: 0; }
+    .journey-phase {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 0;
+      position: relative;
+    }
+    .phase-connector {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 20px;
+    }
+    .phase-dot {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      z-index: 1;
+      box-shadow: 0 0 0 4px var(--primary-light);
+    }
+    .phase-line {
+      width: 2px;
+      flex: 1;
+      background: linear-gradient(to bottom, var(--primary) 0%, var(--primary-light) 100%);
+      min-height: 40px;
+    }
+    .phase-label {
+      text-align: right;
+      padding: 12px 20px 12px 0;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding-top: 10px;
+    }
+    .phase-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 8px 0 8px 0;
+      position: relative;
+    }
+    .phase-card h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .phase-card .channel-tag {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 8px;
+    }
+    .phase-card p { font-size: 0.88rem; color: var(--neutral); margin-bottom: 12px; }
+    .emotion-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0;
+      font-size: 0.85rem;
+    }
+    .emotion-label { color: var(--neutral); font-size: 0.78rem; min-width: 70px; }
+    .emotion-emoji { font-size: 1.2rem; }
+    .kpi-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .kpi-chip {
+      background: var(--success-light);
+      color: #065F46;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 10px;
+    }
+    .trend-link {
+      font-size: 0.78rem;
+      color: var(--primary);
+      text-decoration: none;
+    }
+    .trend-link:hover { text-decoration: underline; }
+    .trend-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .trend-pill {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .trend-pill:hover { background: var(--primary); color: white; }
+
+    /* Mock phone screen */
+    .mock-screen {
+      background: #111827;
+      border-radius: 16px;
+      padding: 16px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: #E5E7EB;
+      margin: 12px 0;
+      line-height: 1.7;
+    }
+    .mock-screen .mock-title { color: var(--accent); font-weight: 700; margin-bottom: 8px; }
+    .mock-screen .mock-green { color: #10B981; }
+    .mock-screen .mock-red { color: #F87171; }
+    .mock-screen .mock-yellow { color: #FBBF24; }
+    .mock-screen .mock-gray { color: #6B7280; }
+
+    /* Emotion timeline */
+    .emotion-timeline {
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      padding: 20px 0;
+    }
+    .et-phase {
+      flex: 1;
+      min-width: 110px;
+      text-align: center;
+      position: relative;
+    }
+    .et-phase::after {
+      content: '→';
+      position: absolute;
+      right: -8px;
+      top: 28px;
+      color: var(--border);
+      font-size: 1.2rem;
+    }
+    .et-phase:last-child::after { display: none; }
+    .et-emoji { font-size: 2rem; display: block; margin-bottom: 4px; }
+    .et-name { font-size: 0.7rem; font-weight: 700; color: var(--neutral); text-transform: uppercase; letter-spacing: 0.3px; }
+    .et-feeling { font-size: 0.78rem; color: var(--dark); margin-top: 2px; }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .comparison-table th {
+      background: var(--primary);
+      color: white;
+      padding: 14px 16px;
+      text-align: left;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .comparison-table th:first-child { border-radius: 0; }
+    .comparison-table td {
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .comparison-table tr:last-child td { border-bottom: none; }
+    .comparison-table tr:nth-child(even) td { background: var(--neutral-light); }
+    .comparison-table .winner { background: var(--success-light) !important; font-weight: 600; }
+    .stars { color: var(--accent); letter-spacing: 1px; }
+
+    /* Risks */
+    .risks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .risk-card {
+      border-radius: 12px;
+      padding: 16px 20px;
+      border-left: 4px solid;
+    }
+    .risk-high { background: var(--danger-light); border-color: var(--danger); }
+    .risk-medium { background: var(--accent-light); border-color: var(--accent); }
+    .risk-low { background: var(--success-light); border-color: var(--success); }
+    .risk-card h5 { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+    .risk-card p { font-size: 0.82rem; color: var(--neutral); }
+    .risk-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 8px;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+    .risk-badge.high { background: var(--danger); color: white; }
+    .risk-badge.medium { background: var(--accent); color: white; }
+    .risk-badge.low { background: var(--success); color: white; }
+
+    /* Footer */
+    .footer {
+      background: var(--dark);
+      color: #9CA3AF;
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 0.85rem;
+    }
+    .footer a { color: var(--primary-light); text-decoration: none; }
+
+    @media (max-width: 640px) {
+      .journey-phase { grid-template-columns: 100px 1fr; }
+      .section-title { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">Клё<span>во</span></div>
+  <div class="subtitle">Customer Journey Map — AI-финансовый ассистент для Gen Z · Российский рынок</div>
+  <div class="meta">
+    <span class="badge">📅 Апрель 2026</span>
+    <span class="badge">🎯 ЦА: 18–28 лет, РФ</span>
+    <span class="badge">📱 Telegram Mini App</span>
+    <span class="badge">🤖 YandexGPT + Roast Mode</span>
+    <span class="badge">💰 ₽199/мес</span>
+  </div>
+</div>
+
+<!-- Nav -->
+<nav class="nav">
+  <ul>
+    <li><a href="#trends">Микро-тренды</a></li>
+    <li><a href="#personas">Персонажи</a></li>
+    <li><a href="#cjm">CJM</a></li>
+    <li><a href="#comparison">Сравнение</a></li>
+    <li><a href="#risks">Риски</a></li>
+  </ul>
+</nav>
+
+<div class="container">
+
+  <!-- MICRO-TRENDS -->
+  <section class="section" id="trends">
+    <div class="section-title">📊 Микро-тренды российского рынка</div>
+    <div class="section-subtitle">Каждый тренд верифицирован и встроен в CJM. Клик по источнику — первоисточник.</div>
+    <div class="trends-grid">
+
+      <div class="trend-card">
+        <div class="trend-number">1</div>
+        <h4>Telegram Mini Apps</h4>
+        <p>82% российской молодёжи 16–24 использует Telegram ежедневно. TMA = нулевое трение установки.</p>
+        <a href="https://mediascope.net/news/1583802/" target="_blank">📰 Mediascope 2024</a><br>
+        <a href="https://telegram.org/blog/mini-apps" target="_blank">📰 Telegram Mini Apps Blog</a>
+        <span class="priority-badge p0">P0 — основной канал</span>
+      </div>
+
+      <div class="trend-card">
+        <div class="trend-number">2</div>
+        <h4>BNPL-закредитованность молодёжи</h4>
+        <p>«Долями», «Сплит», «Подели» — рост 300%+. Молодёжь не контролирует BNPL-обязательства.</p>
+        <a href="https://frankrg.com/60671" target="_blank">📰 Frank RG BNPL 2024</a><br>
+        <a href="https://www.kommersant.ru/doc/6584231" target="_blank">📰 Коммерсант 2024</a>
+        <span class="priority-badge p0">P0 — killer-feature</span>
+      </div>
+
+      <div class="trend-card">
+        <div class="trend-number">3</div>
+        <h4>Финансовая тревожность Gen Z</h4>
+        <p>67% россиян 18–25 испытывают тревогу из-за финансов. Тон продукта: эмпатия + юмор.</p>
+        <a href="https://nafi.ru/analytics/finansovaya-trevozhnos-rossiyskoy-molodezhi-2024/" target="_blank">📰 НАФИ 2024</a><br>
+        <a href="https://ioe.hse.ru/news/827634473.html" target="_blank">📰 ВШЭ 2023</a>
+        <span class="priority-badge p0">P0 — UX и тон</span>
+      </div>
+
+      <div class="trend-card">
+        <div class="trend-number">4</div>
+        <h4>AI-нативность в банкинге</h4>
+        <p>ГигаЧат (Сбер), AI-ассистент Т-Банка — AI-советник стал базовым ожиданием.</p>
+        <a href="https://www.sberbank.ru/ru/person/ai/gigachat" target="_blank">📰 ГигаЧат Сбер</a><br>
+        <a href="https://www.banki.ru/news/daytheme/?id=10997842" target="_blank">📰 Banki.ru 2025</a>
+        <span class="priority-badge p0">P0 — ядро продукта</span>
+      </div>
+
+      <div class="trend-card">
+        <div class="trend-number">5</div>
+        <h4>Российские мерчанты в тратах</h4>
+        <p>WB, Ozon, Яндекс Маркет, Яндекс Еда, Самокат — новая структура расходов Gen Z.</p>
+        <a href="https://datainsight.ru/ecommerce" target="_blank">📰 Data Insight 2024</a><br>
+        <a href="https://romir.ru/studies/potrebitelskie-rashody-rossiyan-2024" target="_blank">📰 Ромир 2024</a>
+        <span class="priority-badge p1">P1 — категоризатор</span>
+      </div>
+
+      <div class="trend-card">
+        <div class="trend-number">6</div>
+        <h4>Геймификация финансового поведения</h4>
+        <p>Стрики, ачивки, цели — Markswebb фиксирует рост вовлечённости в банкинге на 140%.</p>
+        <a href="https://markswebb.ru/report/mobile-banking-rank-2024/" target="_blank">📰 Markswebb 2024</a><br>
+        <a href="https://www.tbank.ru/about/press-releases/goals-2023/" target="_blank">📰 Т-Банк «Цели» 2023</a>
+        <span class="priority-badge p1">P1 — retention</span>
+      </div>
+
+      <div class="trend-card">
+        <div class="trend-number">7</div>
+        <h4>Безналичный рынок 83%</h4>
+        <p>Доля безналичных платежей в РФ достигла 83% — все траты цифровые, доступны для анализа.</p>
+        <a href="https://www.cbr.ru/statistics/nps/psrf/" target="_blank">📰 ЦБ РФ статистика</a><br>
+        <a href="https://www.cbr.ru/about_br/publ/annrep/ann_2024/" target="_blank">📰 Годовой отчёт ЦБ 2024</a>
+        <span class="priority-badge p0">P0 — источник данных</span>
+      </div>
+
+      <div class="trend-card">
+        <div class="trend-number">8</div>
+        <h4>МИР / СБП как основные платёжные системы</h4>
+        <p>Visa/MC ограничены. Оплата через МИР, СБП, ЮMoney — базовое требование для подписки.</p>
+        <a href="https://mironline.ru/" target="_blank">📰 НСПК МИР</a><br>
+        <a href="https://sbp.nspk.ru/" target="_blank">📰 СБП ЦБ РФ</a>
+        <span class="priority-badge p1">P1 — монетизация</span>
+      </div>
+
+      <div class="trend-card">
+        <div class="trend-number">9</div>
+        <h4>Цифровой рубль (CBDC)</h4>
+        <p>ЦБ РФ запустил пилот. В 2025–2026 — массовое внедрение. Ранняя интеграция = конкурентное преимущество.</p>
+        <a href="https://www.cbr.ru/fintech/dr/" target="_blank">📰 ЦБ РФ: Цифровой рубль</a><br>
+        <a href="https://www.rbc.ru/finances/17/06/2024/667051279a7947e06acba4b5" target="_blank">📰 РБК 2024</a>
+        <span class="priority-badge p2">P2 — roadmap</span>
+      </div>
+
+      <div class="trend-card">
+        <div class="trend-number">10</div>
+        <h4>ВКонтакте Клипы — второй канал</h4>
+        <p>Охват 18–24 лет вырос на 47% в 2024. Вирусные видео «roast» — низкий CAC.</p>
+        <a href="https://vk.company/ru/press/releases/11309/" target="_blank">📰 ВКонтакте для бизнеса</a>
+        <span class="priority-badge p1">P1 — marketing</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- PERSONAS -->
+  <section class="section" id="personas">
+    <div class="section-title">👤 Персонажи (User Personas)</div>
+    <div class="section-subtitle">Три ключевых архетипа целевой аудитории</div>
+    <div class="personas-grid">
+
+      <div class="persona-card">
+        <div class="persona-avatar">🎒</div>
+        <div class="persona-name">Саша</div>
+        <div class="persona-age">22 года · Студент · Москва</div>
+        <div class="persona-item"><span class="label">Доход</span> ₽25–40К/мес (подработка)</div>
+        <div class="persona-item"><span class="label">Боль</span> «Не знаю, куда уходят деньги»</div>
+        <div class="persona-item"><span class="label">Цель</span> Накопить на отпуск</div>
+        <div class="persona-item"><span class="label">Банк</span> Т-Банк + BNPL «Долями»</div>
+        <div class="persona-item"><span class="label">Telegram</span> 4–5 ч/день</div>
+      </div>
+
+      <div class="persona-card">
+        <div class="persona-avatar">💻</div>
+        <div class="persona-name">Катя</div>
+        <div class="persona-age">26 лет · Junior Dev · СПб</div>
+        <div class="persona-item"><span class="label">Доход</span> ₽80К/мес</div>
+        <div class="persona-item"><span class="label">Боль</span> «Подписки съедают незаметно»</div>
+        <div class="persona-item"><span class="label">Цель</span> Первый взнос по ипотеке</div>
+        <div class="persona-item"><span class="label">Банк</span> Сбер + Т-Банк</div>
+        <div class="persona-item"><span class="label">Telegram</span> Читает финансовые каналы</div>
+      </div>
+
+      <div class="persona-card">
+        <div class="persona-avatar">🎮</div>
+        <div class="persona-name">Денис</div>
+        <div class="persona-age">19 лет · Фрилансер · Регионы</div>
+        <div class="persona-item"><span class="label">Доход</span> ₽15–25К нерегулярно</div>
+        <div class="persona-item"><span class="label">Боль</span> «Деньги кончаются за неделю»</div>
+        <div class="persona-item"><span class="label">Цель</span> «Прикольно посмотреть»</div>
+        <div class="persona-item"><span class="label">Банк</span> Сбер (карта родителей)</div>
+        <div class="persona-item"><span class="label">Telegram</span> Мемы, игры, юмор</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CJM VARIANTS -->
+  <section class="section" id="cjm">
+    <div class="section-title">🗺️ Customer Journey Map</div>
+    <div class="section-subtitle">Три варианта CJM — выбран Вариант 1 как основной. Варианты 2 и 3 — secondary paths внутри основного.</div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('v1')">✅ Вариант 1: Вирусный Roast (основной)</button>
+      <button class="tab-btn" onclick="showTab('v2')">Вариант 2: Боль после зарплаты</button>
+      <button class="tab-btn" onclick="showTab('v3')">Вариант 3: Финансовая цель</button>
+    </div>
+
+    <!-- VARIANT 1 -->
+    <div id="v1" class="tab-content active">
+      <p style="color:var(--neutral);font-size:0.9rem;margin-bottom:24px;">
+        Пользователь приходит через вирусный контент → пробует «ради смеха» → обнаруживает реальную ценность → конвертируется в платного подписчика.
+      </p>
+
+      <!-- Emotion Timeline -->
+      <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+        <div style="font-size:0.8rem;font-weight:700;color:var(--neutral);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Эмоциональная карта пути</div>
+        <div class="emotion-timeline">
+          <div class="et-phase"><span class="et-emoji">😂</span><div class="et-name">Осведомл.</div><div class="et-feeling">Веселье</div></div>
+          <div class="et-phase"><span class="et-emoji">😮</span><div class="et-name">1й контакт</div><div class="et-feeling">Удивление</div></div>
+          <div class="et-phase"><span class="et-emoji">🤩</span><div class="et-name">Онбординг</div><div class="et-feeling">Восторг</div></div>
+          <div class="et-phase"><span class="et-emoji">😂💡</span><div class="et-name">Активация</div><div class="et-feeling">Шок+Инсайт</div></div>
+          <div class="et-phase"><span class="et-emoji">🏆</span><div class="et-name">Вовлечённость</div><div class="et-feeling">Гордость</div></div>
+          <div class="et-phase"><span class="et-emoji">✅</span><div class="et-name">Подписка</div><div class="et-feeling">Решение</div></div>
+          <div class="et-phase"><span class="et-emoji">🤝</span><div class="et-name">Вирус</div><div class="et-feeling">Шеринг</div></div>
+        </div>
+      </div>
+
+      <div class="journey">
+
+        <!-- Phase 1 -->
+        <div class="journey-phase">
+          <div>
+            <div class="phase-label">Фаза 1</div>
+          </div>
+          <div>
+            <div class="phase-card">
+              <h4>🎬 Осведомлённость <span class="channel-tag">ВК Клипы / Telegram</span></h4>
+              <p>Пользователь видит видео «AI отчитал меня за кофе» или пост с демо «Жёсткого режима». Смеётся → хочет попробовать.</p>
+              <div class="mock-screen">
+                <div class="mock-title">ВКонтакте Клип @klyovoai</div>
+                <div class="mock-green">«Я загрузил свои траты в Клёво...»</div>
+                <div class="mock-yellow">AI: «Ты потратил ₽4,200 на кофе за месяц.</div>
+                <div class="mock-yellow">Это 14 чашек в неделю. Ты нормально?»</div>
+                <div class="mock-gray">▶ 847K просмотров · 23K репостов</div>
+              </div>
+              <div class="emotion-bar"><span class="emotion-label">Эмоция:</span><span class="emotion-emoji">😂</span> Веселье → <span class="emotion-emoji">🤔</span> Любопытство</div>
+              <div class="trend-pills">
+                <a href="https://vk.company/ru/press/releases/11309/" class="trend-pill" target="_blank">ВК Клипы +47% охват</a>
+                <a href="https://mediascope.net/news/1583802/" class="trend-pill" target="_blank">82% Gen Z в Telegram</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="journey-phase">
+          <div><div class="phase-label">Фаза 2</div></div>
+          <div>
+            <div class="phase-card">
+              <h4>👆 Первый контакт <span class="channel-tag">Telegram Mini App</span></h4>
+              <p>Открывает @klyovobot. Видит демо «Жёсткого режима» без регистрации — 3 примера roast'а. Zero friction.</p>
+              <div class="mock-screen">
+                <div class="mock-title">@klyovobot</div>
+                <div>👋 Привет! Я Клёво — честный AI о деньгах.</div>
+                <br>
+                <div class="mock-green">[Попробовать Жёсткий режим (демо)]</div>
+                <div class="mock-gray">Без регистрации · 30 секунд</div>
+              </div>
+              <div class="emotion-bar"><span class="emotion-label">Эмоция:</span><span class="emotion-emoji">😮</span> Удивление → <span class="emotion-emoji">😄</span> Вовлечённость</div>
+              <div class="kpi-row">
+                <span class="kpi-chip">Доля до CTA > 60%</span>
+              </div>
+              <div class="trend-pills">
+                <a href="https://core.telegram.org/bots/webapps" class="trend-pill" target="_blank">TMA initData авторизация</a>
+                <a href="https://nafi.ru/analytics/finansovaya-trevozhnos-rossiyskoy-molodezhi-2024/" class="trend-pill" target="_blank">Снижение барьера (тревожность)</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 3 -->
+        <div class="journey-phase">
+          <div><div class="phase-label">Фаза 3</div></div>
+          <div>
+            <div class="phase-card">
+              <h4>🚀 Онбординг <span class="channel-tag">4 шага · &lt; 3 мин</span></h4>
+              <p>Шаг 1: авторизация через Telegram (1 клик). Шаг 2: выбор режима. Шаг 3: загрузка данных. Шаг 4: первый анализ.</p>
+              <div class="mock-screen">
+                <div class="mock-title">Шаг 2/4 — Как использовать Клёво?</div>
+                <div class="mock-green">[Разобраться с тратами]</div>
+                <div class="mock-green">[Накопить на цель]</div>
+                <div class="mock-green">[Просто посмотреть]</div>
+                <br>
+                <div class="mock-title">Шаг 3/4 — Загрузи данные</div>
+                <div class="mock-yellow">[Загрузить CSV Сбербанк]</div>
+                <div class="mock-yellow">[Загрузить CSV Т-Банк]</div>
+                <div class="mock-yellow">[Ввести вручную]</div>
+              </div>
+              <div class="emotion-bar"><span class="emotion-label">Эмоция:</span><span class="emotion-emoji">🤩</span> Восторг от простоты</div>
+              <div class="kpi-row">
+                <span class="kpi-chip">Завершение онбординга > 70%</span>
+              </div>
+              <div class="trend-pills">
+                <a href="https://www.sberbank.ru/ru/person/accounts/statement" class="trend-pill" target="_blank">CSV Сбербанк</a>
+                <a href="https://www.tbank.ru/help/internet-bank/statement/" class="trend-pill" target="_blank">CSV Т-Банк</a>
+                <a href="https://datainsight.ru/ecommerce" class="trend-pill" target="_blank">РФ мерчанты WB/Ozon</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 4 -->
+        <div class="journey-phase">
+          <div><div class="phase-label">Фаза 4</div></div>
+          <div>
+            <div class="phase-card">
+              <h4>💥 Активация — Aha-moment <span class="channel-tag">Дашборд + Roast</span></h4>
+              <p>Топ-5 категорий + первый персональный roast + найденные подписки-паразиты + BNPL-обязательства.</p>
+              <div class="mock-screen">
+                <div class="mock-title">Твои траты за март: ₽47,320</div>
+                <div>🍕 Еда и кафе      <span class="mock-yellow">₽12,400</span> (26%)</div>
+                <div>📦 WB / Ozon       <span class="mock-yellow">₽9,800</span>  (21%)</div>
+                <div>🎮 Подписки        <span class="mock-red">₽4,200</span>   (9%)</div>
+                <div>🚕 Такси           <span class="mock-yellow">₽3,100</span>  (7%)</div>
+                <div>☕ Кофейни         <span class="mock-red">₽2,800</span>   (6%)</div>
+                <br>
+                <div class="mock-title">🔥 Жёсткий режим говорит:</div>
+                <div class="mock-green">«14 чашек кофе в неделю?</div>
+                <div class="mock-green">За год это ₽33,600. Ты купил</div>
+                <div class="mock-green">бы кофемашину и ещё осталось.»</div>
+                <br>
+                <div class="mock-red">⚠ BNPL «Долями»: активных на ₽8,400</div>
+                <div class="mock-red">🧹 Паразитических подписок: 3 шт</div>
+              </div>
+              <div class="emotion-bar"><span class="emotion-label">Эмоция:</span><span class="emotion-emoji">😂</span> Смех → <span class="emotion-emoji">💡</span> Инсайт → <span class="emotion-emoji">😤</span> Мотивация</div>
+              <div class="kpi-row">
+                <span class="kpi-chip">DAU/MAU > 20%</span>
+                <span class="kpi-chip">Шеринг roast > 15%</span>
+              </div>
+              <div class="trend-pills">
+                <a href="https://frankrg.com/60671" class="trend-pill" target="_blank">BNPL Frank RG 2024</a>
+                <a href="https://www.kommersant.ru/doc/6584231" class="trend-pill" target="_blank">Закредитованность Коммерсант</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 5 -->
+        <div class="journey-phase">
+          <div><div class="phase-label">Фаза 5</div></div>
+          <div>
+            <div class="phase-card">
+              <h4>🔄 Вовлечённость <span class="channel-tag">Ежедневные триггеры</span></h4>
+              <p>Ежедневный чекин, еженедельный отчёт, стрики без спонтанных покупок, ачивки.</p>
+              <div class="mock-screen">
+                <div class="mock-title">Сегодня потратил ₽840</div>
+                <div class="mock-yellow">Это на 12% больше дневного бюджета.</div>
+                <div class="mock-yellow">Ещё один кофе? ☕</div>
+                <br>
+                <div class="mock-green">🔥 7 дней без спонтанных покупок!</div>
+                <div class="mock-green">🏆 Убил 3 подписки-паразита</div>
+                <div class="mock-green">💰 Сэкономил ₽3,200 за неделю</div>
+              </div>
+              <div class="emotion-bar"><span class="emotion-label">Эмоция:</span><span class="emotion-emoji">🏆</span> Гордость → <span class="emotion-emoji">🔄</span> Привычка</div>
+              <div class="kpi-row">
+                <span class="kpi-chip">Retention 30d > 35%</span>
+                <span class="kpi-chip">Sticker share > 10%</span>
+              </div>
+              <div class="trend-pills">
+                <a href="https://markswebb.ru/report/mobile-banking-rank-2024/" class="trend-pill" target="_blank">Геймификация Markswebb 2024</a>
+                <a href="https://www.tbank.ru/about/press-releases/goals-2023/" class="trend-pill" target="_blank">Т-Банк Цели +140%</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 6 -->
+        <div class="journey-phase">
+          <div><div class="phase-label">Фаза 6</div></div>
+          <div>
+            <div class="phase-card">
+              <h4>💳 Конверсия в подписку <span class="channel-tag">₽199/мес · ЮKassa</span></h4>
+              <p>Paywall появляется в момент, когда пользователь хочет «больше» — безлимитный roast, автосбережения, цели.</p>
+              <div class="mock-screen">
+                <div class="mock-title">Клёво Плюс — ₽199/мес</div>
+                <div class="mock-green">✅ Безлимитный Жёсткий режим</div>
+                <div class="mock-green">✅ Автосбережения под цели</div>
+                <div class="mock-green">✅ История расходов без лимитов</div>
+                <div class="mock-green">✅ Умные уведомления</div>
+                <br>
+                <div class="mock-yellow">[Оплатить через СБП]</div>
+                <div class="mock-yellow">[Оплатить картой МИР]</div>
+                <div class="mock-yellow">[Оплатить ЮMoney]</div>
+              </div>
+              <div class="emotion-bar"><span class="emotion-label">Эмоция:</span><span class="emotion-emoji">🤔</span> Раздумье → <span class="emotion-emoji">✅</span> Принятие</div>
+              <div class="kpi-row">
+                <span class="kpi-chip">Конверсия 5–8%</span>
+                <span class="kpi-chip">Churn &lt; 10%/мес</span>
+              </div>
+              <div class="trend-pills">
+                <a href="https://yookassa.ru/developers" class="trend-pill" target="_blank">ЮKassa API</a>
+                <a href="https://sbp.nspk.ru/" class="trend-pill" target="_blank">СБП НСПК</a>
+                <a href="https://mironline.ru/" class="trend-pill" target="_blank">МИР НСПК</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 7 -->
+        <div class="journey-phase">
+          <div><div class="phase-label">Фаза 7</div></div>
+          <div>
+            <div class="phase-card">
+              <h4>🦠 Вирусный цикл <span class="channel-tag">Шеринг + Реферал</span></h4>
+              <p>После каждого roast — кнопка шеринга в Telegram/ВК. Реферальная программа: оба получают месяц Плюс.</p>
+              <div class="mock-screen">
+                <div class="mock-title">Поделиться Жёстким режимом 🔥</div>
+                <div class="mock-green">[Отправить в Telegram]</div>
+                <div class="mock-green">[Поделиться в ВК]</div>
+                <br>
+                <div class="mock-title">Пригласи друга</div>
+                <div class="mock-yellow">Оба получите месяц Клёво Плюс 🎁</div>
+                <div class="mock-gray">твоя ссылка: t.me/klyovobot?ref=abc123</div>
+              </div>
+              <div class="emotion-bar"><span class="emotion-label">Эмоция:</span><span class="emotion-emoji">😂</span> Развлечение → <span class="emotion-emoji">🤝</span> Социальность</div>
+              <div class="kpi-row">
+                <span class="kpi-chip">Viral K > 0.3</span>
+                <span class="kpi-chip">Referral конверсия > 20%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /v1 -->
+
+    <!-- VARIANT 2 -->
+    <div id="v2" class="tab-content">
+      <p style="color:var(--neutral);font-size:0.9rem;margin-bottom:24px;">
+        Пользователь приходит в момент финансового стресса. Высокая конверсия, но retention падает после снятия боли.
+      </p>
+      <div style="background:var(--accent-light);border-left:4px solid var(--accent);border-radius:8px;padding:16px 20px;margin-bottom:20px;">
+        <strong>Почему не основной:</strong> Канал (SEO/Google) медленнее Telegram-вирусности. Высокий churn после «лечения» боли. Используется как secondary path.
+      </div>
+      <div class="journey">
+        <div class="journey-phase">
+          <div><div class="phase-label">Триггер</div></div>
+          <div><div class="phase-card">
+            <h4>😰 Финансовый стресс <span class="channel-tag">SEO / Дзен / Пикабу</span></h4>
+            <p>Получил выписку, деньги кончились за неделю. Гуглит «куда уходят деньги приложение РФ».</p>
+            <div class="emotion-bar"><span class="emotion-label">Эмоция:</span><span class="emotion-emoji">😰</span> Стресс → <span class="emotion-emoji">😔</span> Стыд</div>
+            <div class="trend-pills"><a href="https://nafi.ru/analytics/finansovaya-trevozhnos-rossiyskoy-molodezhi-2024/" class="trend-pill" target="_blank">НАФИ: тревожность 67%</a></div>
+          </div></div>
+        </div>
+        <div class="journey-phase">
+          <div><div class="phase-label">Онбординг</div></div>
+          <div><div class="phase-card">
+            <h4>🧩 «Давай разберёмся» <span class="channel-tag">Эмпатичный тон</span></h4>
+            <p>Первый экран не «жёсткий», а поддерживающий: «Нормально не знать. Давай вместе разберёмся.»</p>
+            <div class="emotion-bar"><span class="emotion-label">Эмоция:</span><span class="emotion-emoji">🤗</span> Облегчение → <span class="emotion-emoji">🤩</span> Надежда</div>
+          </div></div>
+        </div>
+        <div class="journey-phase">
+          <div><div class="phase-label">Aha-moment</div></div>
+          <div><div class="phase-card">
+            <h4>💡 «Нашёл, куда уходили деньги» <span class="channel-tag">Анализ трат</span></h4>
+            <p>«Оказывается, ₽6,400/мес уходит на забытые подписки» — конкретная и решаемая проблема.</p>
+            <div class="emotion-bar"><span class="emotion-label">Эмоция:</span><span class="emotion-emoji">😳</span> Шок → <span class="emotion-emoji">💪</span> Контроль</div>
+            <div class="kpi-row">
+              <span class="kpi-chip">Конверсия 8–12% (выше)</span>
+              <span class="kpi-chip">Retention 30d ~25% (ниже)</span>
+            </div>
+          </div></div>
+        </div>
+      </div>
+    </div><!-- /v2 -->
+
+    <!-- VARIANT 3 -->
+    <div id="v3" class="tab-content">
+      <p style="color:var(--neutral);font-size:0.9rem;margin-bottom:24px;">
+        Пользователь приходит с позитивной мотивацией — хочет накопить на конкретную цель. Высокий retention пока цель не достигнута.
+      </p>
+      <div style="background:var(--success-light);border-left:4px solid var(--success);border-radius:8px;padding:16px 20px;margin-bottom:20px;">
+        <strong>Почему не основной:</strong> Меньше виральности — достижение цели не так заразительно делиться, как «AI меня осудил». Используется как secondary path.
+      </div>
+      <div class="journey">
+        <div class="journey-phase">
+          <div><div class="phase-label">Триггер</div></div>
+          <div><div class="phase-card">
+            <h4>✨ Позитивная мотивация <span class="channel-tag">Telegram финканалы</span></h4>
+            <p>Хочет накопить на iPhone 16 (₽89K). Находит Клёво через канал «Лайфхаки для студентов».</p>
+            <div class="emotion-bar"><span class="emotion-label">Эмоция:</span><span class="emotion-emoji">🌟</span> Воодушевление</div>
+          </div></div>
+        </div>
+        <div class="journey-phase">
+          <div><div class="phase-label">Онбординг</div></div>
+          <div><div class="phase-card">
+            <h4>🎯 Конструктор цели <span class="channel-tag">Goal Builder</span></h4>
+            <p>«На что копишь?» → вводит цель и сумму → AI рассчитывает: «Если сократить кофе на 50% — накопишь за 3.5 мес».</p>
+            <div class="emotion-bar"><span class="emotion-label">Эмоция:</span><span class="emotion-emoji">🤩</span> Восторг → <span class="emotion-emoji">💪</span> Решимость</div>
+          </div></div>
+        </div>
+        <div class="journey-phase">
+          <div><div class="phase-label">Retention</div></div>
+          <div><div class="phase-card">
+            <h4>📈 Прогресс к цели <span class="channel-tag">Прогресс-бар · Стрики</span></h4>
+            <p>Пользователь возвращается каждый день следить за прогрессом. Самый высокий retention из трёх вариантов.</p>
+            <div class="emotion-bar"><span class="emotion-label">Эмоция:</span><span class="emotion-emoji">🏆</span> Гордость прогресса</div>
+            <div class="kpi-row">
+              <span class="kpi-chip">Конверсия 10–15% (высокая)</span>
+              <span class="kpi-chip">Retention 30d ~45% (лучший)</span>
+            </div>
+            <div class="trend-pills">
+              <a href="https://www.tbank.ru/about/press-releases/goals-2023/" class="trend-pill" target="_blank">Т-Банк Цели +140%</a>
+              <a href="https://markswebb.ru/report/mobile-banking-rank-2024/" class="trend-pill" target="_blank">Markswebb геймификация</a>
+            </div>
+          </div></div>
+        </div>
+      </div>
+    </div><!-- /v3 -->
+
+  </section>
+
+  <!-- COMPARISON -->
+  <section class="section" id="comparison">
+    <div class="section-title">⚖️ Сравнение вариантов CJM</div>
+    <div class="section-subtitle">Итоговая матрица для принятия решения</div>
+    <div style="overflow-x:auto;">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Параметр</th>
+            <th>✅ Вирусный Roast</th>
+            <th>Боль после зарплаты</th>
+            <th>Финансовая цель</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>CAC</strong></td>
+            <td class="winner">Низкий (вирус)</td>
+            <td>Средний (SEO)</td>
+            <td>Средний–высокий</td>
+          </tr>
+          <tr>
+            <td><strong>Время до Aha-moment</strong></td>
+            <td class="winner">< 2 мин</td>
+            <td>5–10 мин</td>
+            <td>3–5 мин</td>
+          </tr>
+          <tr>
+            <td><strong>Конверсия free→paid</strong></td>
+            <td>5–8%</td>
+            <td>8–12%</td>
+            <td class="winner">10–15%</td>
+          </tr>
+          <tr>
+            <td><strong>Retention 30d</strong></td>
+            <td>35%</td>
+            <td>25%</td>
+            <td class="winner">45%</td>
+          </tr>
+          <tr>
+            <td><strong>Виральность</strong></td>
+            <td class="winner"><span class="stars">★★★★★</span></td>
+            <td><span class="stars">★★</span>☆☆☆</td>
+            <td><span class="stars">★★★</span>☆☆</td>
+          </tr>
+          <tr>
+            <td><strong>Уникальность vs конкурентов</strong></td>
+            <td class="winner"><span class="stars">★★★★★</span></td>
+            <td><span class="stars">★★★</span>☆☆</td>
+            <td><span class="stars">★★★</span>☆☆</td>
+          </tr>
+          <tr>
+            <td><strong>Соответствие позиционированию</strong></td>
+            <td class="winner"><span class="stars">★★★★★</span></td>
+            <td><span class="stars">★★★★</span>☆</td>
+            <td><span class="stars">★★★★</span>☆</td>
+          </tr>
+          <tr>
+            <td><strong>Масштабируемость</strong></td>
+            <td class="winner"><span class="stars">★★★★★</span></td>
+            <td><span class="stars">★★★</span>☆☆</td>
+            <td><span class="stars">★★★</span>☆☆</td>
+          </tr>
+          <tr>
+            <td><strong>LTV</strong></td>
+            <td>Средний</td>
+            <td>Средний</td>
+            <td class="winner">Высокий</td>
+          </tr>
+          <tr>
+            <td><strong>Итог</strong></td>
+            <td class="winner" style="font-size:1.1rem;">🥇 Основной путь</td>
+            <td>Secondary path</td>
+            <td>Secondary path</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- RISKS -->
+  <section class="section" id="risks">
+    <div class="section-title">⚠️ Риски и точки роста</div>
+    <div class="risks-grid">
+      <div class="risk-card risk-high">
+        <span class="risk-badge high">Высокий</span>
+        <h5>Конкуренция Сбер/Т-Банк</h5>
+        <p>Крупные банки могут скопировать roast-механику. Митигация: фокус на характере бренда, не на функциях.</p>
+      </div>
+      <div class="risk-card risk-high">
+        <span class="risk-badge high">Высокий</span>
+        <h5>Пользователи не загружают CSV</h5>
+        <p>Барьер ввода данных. Митигация: ручной ввод, демо без данных, инструкции по банкам.</p>
+      </div>
+      <div class="risk-card risk-medium">
+        <span class="risk-badge medium">Средний</span>
+        <h5>Качество YandexGPT roast'а</h5>
+        <p>Модель может генерировать неточные или обидные комментарии. Митигация: fine-tuning, модерация.</p>
+      </div>
+      <div class="risk-card risk-medium">
+        <span class="risk-badge medium">Средний</span>
+        <h5>Churn после первого roast</h5>
+        <p>«Посмеялся и ушёл». Митигация: геймификация, стрики, цели — держат пользователя.</p>
+      </div>
+      <div class="risk-card risk-low">
+        <span class="risk-badge low">Низкий</span>
+        <h5>Telegram блокирует финтех TMA</h5>
+        <p>Маловероятно. Митигация: web-версия как fallback.</p>
+      </div>
+      <div class="risk-card risk-low">
+        <span class="risk-badge low">Низкий</span>
+        <h5>Регуляторные изменения</h5>
+        <p>Продукт — информационный сервис (не финансовый посредник). ФЗ-152 compliant через Yandex Cloud.</p>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /container -->
+
+<div class="footer">
+  <p>Клёво — AI-финансовый ассистент для Gen Z · Российский рынок</p>
+  <p style="margin-top:8px;">
+    <a href="../ADR/ADR-001-product-name-and-positioning.md">ADR-001</a> ·
+    <a href="../ADR/ADR-002-tech-stack.md">ADR-002</a> ·
+    <a href="../ADR/ADR-003-monetization.md">ADR-003</a> ·
+    <a href="../ADR/ADR-004-distribution-channels.md">ADR-004</a> ·
+    <a href="../ADR/ADR-005-data-compliance.md">ADR-005</a> ·
+    <a href="../ADR/ADR-006-cjm-variant.md">ADR-006</a> ·
+    <a href="../micro-trends-research.md">Микро-тренды</a> ·
+    <a href="CJM.md">CJM.md</a>
+  </p>
+  <p style="margin-top:8px;font-size:0.75rem;">Апрель 2026 · Все данные из публичных источников</p>
+</div>
+
+<script>
+  function showTab(id) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+
+</body>
+</html>
