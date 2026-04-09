@@ -1,0 +1,117 @@
+{
+  "project": "Клёво",
+  "version": "0.1.0-mvp",
+  "last_updated": "2026-04-09",
+  "features": [
+    {
+      "id": "telegram-auth",
+      "name": "Авторизация через Telegram",
+      "description": "HMAC-SHA256 initData validation, JWT issue, find-or-create user",
+      "status": "next",
+      "priority": "must_have",
+      "moscow": "M",
+      "phase": "mvp",
+      "depends_on": [],
+      "files": ["apps/api/src/routes/auth.ts", "apps/api/src/plugins/telegram.ts", "apps/api/src/plugins/jwt.ts"]
+    },
+    {
+      "id": "csv-import",
+      "name": "CSV импорт (Сбер + Т-Банк)",
+      "description": "Parse Sberbank (CP1251, semicolons) and Tinkoff (UTF-8, commas) CSV exports",
+      "status": "next",
+      "priority": "must_have",
+      "moscow": "M",
+      "phase": "mvp",
+      "depends_on": ["telegram-auth"],
+      "files": ["apps/api/src/services/CsvParser.ts", "apps/api/src/services/Categorizer.ts", "apps/api/src/routes/transactions.ts"]
+    },
+    {
+      "id": "roast-mode",
+      "name": "Жёсткий режим (Roast Mode)",
+      "description": "AI-generated spending roast via YandexGPT Pro with GigaChat fallback",
+      "status": "next",
+      "priority": "must_have",
+      "moscow": "M",
+      "phase": "mvp",
+      "depends_on": ["csv-import"],
+      "files": ["apps/api/src/services/RoastGenerator.ts", "apps/api/src/routes/roast.ts", "apps/tma/src/pages/RoastMode.tsx", "apps/tma/src/components/RoastCard.tsx"]
+    },
+    {
+      "id": "subscription-hunter",
+      "name": "Охотник на подписки-паразиты",
+      "description": "Detect recurring payments, show dead subscriptions, calculate annual cost",
+      "status": "planned",
+      "priority": "must_have",
+      "moscow": "M",
+      "phase": "mvp",
+      "depends_on": ["csv-import"],
+      "files": ["apps/api/src/services/SubscriptionDetector.ts", "apps/api/src/routes/subscriptions.ts", "apps/tma/src/pages/Subscriptions.tsx"]
+    },
+    {
+      "id": "bnpl-tracker",
+      "name": "BNPL-трекер",
+      "description": "Aggregate Долями/Сплит/Подели obligations, show payment timeline",
+      "status": "planned",
+      "priority": "must_have",
+      "moscow": "M",
+      "phase": "mvp",
+      "depends_on": ["csv-import"],
+      "files": ["apps/tma/src/pages/BNPL.tsx", "apps/api/src/routes/bnpl.ts"]
+    },
+    {
+      "id": "viral-sharing",
+      "name": "Шеринг и виральность",
+      "description": "Share roast card button, referral program, unique branded share cards",
+      "status": "planned",
+      "priority": "must_have",
+      "moscow": "M",
+      "phase": "mvp",
+      "depends_on": ["roast-mode"],
+      "files": ["apps/tma/src/components/RoastCard.tsx", "apps/api/src/routes/referral.ts"]
+    },
+    {
+      "id": "payments-subscription",
+      "name": "Подписка Клёво Плюс",
+      "description": "ЮKassa integration, МИР/СБП/ЮMoney, auto-renewal, paywall",
+      "status": "planned",
+      "priority": "must_have",
+      "moscow": "M",
+      "phase": "mvp",
+      "depends_on": ["telegram-auth"],
+      "files": ["apps/api/src/services/PaymentService.ts", "apps/api/src/routes/webhooks.ts", "apps/tma/src/pages/Paywall.tsx", "apps/tma/src/components/PaymentWidget.tsx"]
+    },
+    {
+      "id": "spending-dashboard",
+      "name": "Dashboard анализа трат",
+      "description": "Top-5 categories, period comparison, pie chart (Recharts), RU-specific categories",
+      "status": "planned",
+      "priority": "must_have",
+      "moscow": "M",
+      "phase": "mvp",
+      "depends_on": ["csv-import"],
+      "files": ["apps/tma/src/pages/Dashboard.tsx", "apps/tma/src/components/SpendingChart.tsx"]
+    },
+    {
+      "id": "financial-goals",
+      "name": "Финансовые цели с AI",
+      "description": "Set savings goals, AI recommendations, progress tracking",
+      "status": "planned",
+      "priority": "should_have",
+      "moscow": "S",
+      "phase": "v1.0",
+      "depends_on": ["payments-subscription"],
+      "files": []
+    },
+    {
+      "id": "streaks-achievements",
+      "name": "Стрики и ачивки",
+      "description": "Gamification: saving streaks, spending achievements",
+      "status": "planned",
+      "priority": "should_have",
+      "moscow": "S",
+      "phase": "v1.0",
+      "depends_on": ["spending-dashboard"],
+      "files": []
+    }
+  ]
+}
