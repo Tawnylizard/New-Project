@@ -134,7 +134,7 @@ Then I can enter: amount (₽), category (dropdown), date, optional note
 
 Given I enter a valid transaction
 When I tap "Добавить"
-Then the transaction is saved and appears in my list immediately
+Then the transaction is saved and appears in my list within 1 second
 
 Given I enter an amount of 0 or negative
 When I tap "Добавить"
@@ -205,16 +205,24 @@ I want to see my total BNPL obligations in one place,
 So that I understand my real financial commitments.
 
 Acceptance Criteria:
-Given I have BNPL transactions in my CSV (identified by merchant name pattern)
-When I open the "BNPL" section
+Given I have BNPL transactions in my CSV matching patterns:
+  - "DOLAMI" / "ДОЛЯМИ" / "Dolami"
+  - "SPLIT" / "СПЛИТ" / "Tinkoff Split"
+  - "PODELI" / "ПОДЕЛИ" / "Podeli"
+  - "BNPL" (generic)
+When I open the "BNPL" section within 2 seconds
 Then I see total outstanding amount across all BNPL services
 And a breakdown by service (Долями, Сплит, Подели)
-And a timeline of upcoming payments
+And a timeline of upcoming payments sorted by date ascending
 
 Given my BNPL obligations exceed 30% of my monthly income (if income is set)
 When the dashboard loads
 Then I see a warning card: "⚠️ BNPL занимает X% твоего дохода"
 And an AI comment about this
+
+Given I have NO BNPL transactions in my history
+When I open the "BNPL" section
+Then I see: "У тебя нет активных BNPL-платежей 🎉"
 ```
 
 ---
