@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  FREE
+  PLUS
+}
+
+enum Category {
+  FOOD_CAFE
+  GROCERIES
+  MARKETPLACE
+  TRANSPORT
+  SUBSCRIPTIONS
+  ENTERTAINMENT
+  HEALTH
+  CLOTHING
+  EDUCATION
+  OTHER
+}
+
+enum Source {
+  CSV_SBER
+  CSV_TBANK
+  MANUAL
+}
+
+enum SubscriptionStatus {
+  active
+  cancelled
+  ignored
+}
+
+enum KlyovoSubPlan {
+  plus_monthly
+  plus_yearly
+}
+
+enum KlyovoSubStatus {
+  active
+  cancelled
+  expired
+}
+
+model User {
+  id               String    @id @default(uuid())
+  telegramId       BigInt    @unique
+  telegramUsername String?
+  displayName      String
+  plan             Plan      @default(FREE)
+  planExpiresAt    DateTime?
+  referralCode     String    @unique @default(cuid())
+  referredBy       String?
+  consentGivenAt   DateTime
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  transactions   Transaction[]
+  roastSessions  RoastSession[]
+  subscriptions  DetectedSubscription[]
+  klyovoSubs     KlyovoSubscription[]
+}
+
+model Transaction {
+  id                 String   @id @default(uuid())
+  userId             String
+  amountKopecks      Int
+  merchantName       String
+  merchantNormalized String
+  category           Category
+  transactionDate    DateTime
+  source             Source
+  rawDescription     String?
+  isBnpl             Boolean  @default(false)
+  bnplService        String?
+  createdAt          DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, transactionDate, amountKopecks, merchantNormalized])
+  @@index([userId, transactionDate])
+}
+
+model RoastSession {
+  id              String    @id @default(uuid())
+  userId          String
+  roastText       String
+  spendingSummary Json
+  mode            String
+  sharedAt        DateTime?
+  createdAt       DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model DetectedSubscription {
+  id              String             @id @default(uuid())
+  userId          String
+  merchantName    String
+  estimatedAmount Int
+  frequencyDays   Int
+  lastChargeDate  DateTime
+  occurrences     Int                @default(1)
+  status          SubscriptionStatus @default(active)
+  createdAt       DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, merchantName])
+  @@index([userId, status])
+}
+
+model KlyovoSubscription {
+  id               String          @id @default(uuid())
+  userId           String
+  plan             KlyovoSubPlan
+  status           KlyovoSubStatus @default(active)
+  yookassaPaymentId String         @unique
+  startedAt        DateTime
+  expiresAt        DateTime
+  createdAt        DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}

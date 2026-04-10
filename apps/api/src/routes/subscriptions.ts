@@ -1,0 +1,98 @@
+import type { FastifyPluginAsync } from 'fastify'
+import { z } from 'zod'
+import { prisma } from '@klyovo/db'
+import { requireAuth } from '../plugins/jwt.js'
+import { PaymentService } from '../services/PaymentService.js'
+import type { JwtPayload } from '../plugins/jwt.js'
+import type { SubscriptionListResponse, CheckoutResponse } from '@klyovo/shared'
+import { PLUS_MONTHLY_PRICE_KOPECKS, PLUS_YEARLY_PRICE_KOPECKS } from '@klyovo/shared'
+
+const statusQuerySchema = z.object({
+  status: z.enum(['active', 'cancelled', 'ignored']).optional()
+})
+
+const checkoutSchema = z.object({
+  plan: z.enum(['plus_monthly', 'plus_yearly']),
+  returnUrl: z.string().url()
+})
+
+export const subscriptionRoutes: FastifyPluginAsync = async app => {
+  app.addHook('preHandler', requireAuth)
+
+  // GET /subscriptions — detected parasitic subscriptions
+  app.get('/', async (req, reply): Promise<SubscriptionListResponse> => {
+    const payload = req.user as JwtPayload
+    const { userId } = payload
+    const { status } = statusQuerySchema.parse(req.query)
+
+    const subs = await prisma.detectedSubscription.findMany({
+      where: { userId, ...(status ? { status } : {}) },
+      orderBy: { estimatedAmount: 'desc' }
+    })
+
+    const enriched = subs.map(sub => ({
+      ...sub,
+      annualCost: Math.round(sub.estimatedAmount * (365 / sub.frequencyDays))
+    }))
+
+    const totalMonthly = subs
+      .filter(s => s.status === 'active')
+      .reduce((sum, s) => sum + Math.round(s.estimatedAmount * (30 / s.frequencyDays)), 0)
+    const totalAnnual = subs
+      .filter(s => s.status === 'active')
+      .reduce((sum, s) => sum + Math.round(s.estimatedAmount * (365 / s.frequencyDays)), 0)
+
+    return { subscriptions: enriched, totalMonthly, totalAnnual }
+  })
+
+  // PATCH /subscriptions/:id — update status
+  app.patch<{ Params: { id: string }; Body: { status: string } }>(
+    '/:id',
+    async (req, reply) => {
+      const payload = req.user as JwtPayload
+      const { userId } = payload
+      const validStatus = z.enum(['active', 'cancelled', 'ignored']).parse(req.body.status)
+
+      const sub = await prisma.detectedSubscription.findFirst({
+        where: { id: req.params['id'], userId }
+      })
+
+      if (!sub) {
+        reply.status(404)
+        throw Object.assign(new Error('Подписка не найдена'), { statusCode: 404, code: 'NOT_FOUND' })
+      }
+
+      const updated = await prisma.detectedSubscription.update({
+        where: { id: sub.id },
+        data: { status: validStatus }
+      })
+
+      return { subscription: updated }
+    }
+  )
+
+  // POST /subscriptions/checkout — start ЮKassa payment for Клёво Плюс
+  app.post<{ Body: z.infer<typeof checkoutSchema> }>(
+    '/checkout',
+    async (req, reply): Promise<CheckoutResponse> => {
+      const payload = req.user as JwtPayload
+      const { userId } = payload
+      const { plan, returnUrl } = checkoutSchema.parse(req.body)
+
+      const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } })
+      const amount =
+        plan === 'plus_monthly' ? PLUS_MONTHLY_PRICE_KOPECKS : PLUS_YEARLY_PRICE_KOPECKS
+
+      const result = await PaymentService.createPayment({
+        userId,
+        userEmail: `${user.telegramId}@klyovo.telegram`,
+        plan,
+        amount,
+        returnUrl
+      })
+
+      reply.status(200)
+      return result
+    }
+  )
+}
