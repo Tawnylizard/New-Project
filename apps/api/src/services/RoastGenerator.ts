@@ -1,4 +1,6 @@
-import type { Transaction } from '@klyovo/db'
+import type { Prisma } from '@klyovo/db'
+
+type Transaction = Prisma.TransactionGetPayload<object>
 import type { RoastMode } from '@klyovo/shared'
 import { getRedisClient } from '../plugins/rateLimit.js'
 import crypto from 'node:crypto'

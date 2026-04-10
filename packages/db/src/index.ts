@@ -12,17 +12,5 @@ if (process.env['NODE_ENV'] !== 'production') {
   globalForPrisma.prisma = prisma
 }
 
-export { Prisma } from '@prisma/client'
-export type {
-  User,
-  Transaction,
-  RoastSession,
-  DetectedSubscription,
-  KlyovoSubscription,
-  Plan,
-  Category,
-  Source,
-  SubscriptionStatus,
-  KlyovoSubPlan,
-  KlyovoSubStatus
-} from '@prisma/client'
+// Re-export Prisma namespace and generated types (available after `prisma generate`)
+export { Prisma, PrismaClient } from '@prisma/client'

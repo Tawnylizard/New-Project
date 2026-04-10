@@ -1,11 +1,13 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
-import { prisma } from '@klyovo/db'
+import { prisma, type Prisma } from '@klyovo/db'
 import { requireAuth } from '../plugins/jwt.js'
 import { RoastGenerator } from '../services/RoastGenerator.js'
 import type { JwtPayload } from '../plugins/jwt.js'
 import type { GenerateRoastResponse } from '@klyovo/shared'
 import { FREE_ROAST_LIMIT_PER_MONTH } from '@klyovo/shared'
+
+type Transaction = Prisma.TransactionGetPayload<object>
 
 const generateRoastSchema = z.object({
   mode: z.enum(['harsh', 'soft']),
@@ -64,7 +66,7 @@ export const roastRoutes: FastifyPluginAsync = async app => {
       const roastText = await RoastGenerator.generate(userId, transactions, mode)
 
       // Build spending summary
-      const totalAmount = transactions.reduce((s, t) => s + t.amountKopecks, 0)
+      const totalAmount = transactions.reduce((sum: number, t: Transaction) => sum + t.amountKopecks, 0)
       const categorySums = new Map<string, number>()
       for (const t of transactions) {
         categorySums.set(t.category, (categorySums.get(t.category) ?? 0) + t.amountKopecks)
@@ -79,8 +81,8 @@ export const roastRoutes: FastifyPluginAsync = async app => {
         }))
 
       const bnplTotal = transactions
-        .filter(t => t.isBnpl)
-        .reduce((s, t) => s + t.amountKopecks, 0)
+        .filter((t: Transaction) => t.isBnpl)
+        .reduce((sum: number, t: Transaction) => sum + t.amountKopecks, 0)
 
       const subscriptionsFound = await prisma.detectedSubscription.count({
         where: { userId, status: 'active' }

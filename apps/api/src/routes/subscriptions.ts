@@ -1,11 +1,13 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
-import { prisma } from '@klyovo/db'
+import { prisma, type Prisma } from '@klyovo/db'
 import { requireAuth } from '../plugins/jwt.js'
 import { PaymentService } from '../services/PaymentService.js'
 import type { JwtPayload } from '../plugins/jwt.js'
 import type { SubscriptionListResponse, CheckoutResponse } from '@klyovo/shared'
 import { PLUS_MONTHLY_PRICE_KOPECKS, PLUS_YEARLY_PRICE_KOPECKS } from '@klyovo/shared'
+
+type DetectedSubscription = Prisma.DetectedSubscriptionGetPayload<object>
 
 const statusQuerySchema = z.object({
   status: z.enum(['active', 'cancelled', 'ignored']).optional()
@@ -30,17 +32,17 @@ export const subscriptionRoutes: FastifyPluginAsync = async app => {
       orderBy: { estimatedAmount: 'desc' }
     })
 
-    const enriched = subs.map(sub => ({
+    const enriched = subs.map((sub: DetectedSubscription) => ({
       ...sub,
       annualCost: Math.round(sub.estimatedAmount * (365 / sub.frequencyDays))
     }))
 
     const totalMonthly = subs
-      .filter(s => s.status === 'active')
-      .reduce((sum, s) => sum + Math.round(s.estimatedAmount * (30 / s.frequencyDays)), 0)
+      .filter((s: DetectedSubscription) => s.status === 'active')
+      .reduce((sum: number, s: DetectedSubscription) => sum + Math.round(s.estimatedAmount * (30 / s.frequencyDays)), 0)
     const totalAnnual = subs
-      .filter(s => s.status === 'active')
-      .reduce((sum, s) => sum + Math.round(s.estimatedAmount * (365 / s.frequencyDays)), 0)
+      .filter((s: DetectedSubscription) => s.status === 'active')
+      .reduce((sum: number, s: DetectedSubscription) => sum + Math.round(s.estimatedAmount * (365 / s.frequencyDays)), 0)
 
     return { subscriptions: enriched, totalMonthly, totalAnnual }
   })

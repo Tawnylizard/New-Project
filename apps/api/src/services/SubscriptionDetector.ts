@@ -1,4 +1,6 @@
-import type { Transaction } from '@klyovo/db'
+import type { Prisma } from '@klyovo/db'
+
+export type Transaction = Prisma.TransactionGetPayload<object>
 
 export interface DetectedSub {
   merchantName: string

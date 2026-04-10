@@ -49,10 +49,10 @@ export function buildApp(): ReturnType<typeof Fastify> {
   app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }))
 
   // ─── Error handler ────────────────────────────────────────────────────────
-  app.setErrorHandler((error, _req, reply) => {
+  app.setErrorHandler((error: Error & { statusCode?: number; code?: string }, _req, reply) => {
     app.log.error(error)
     const statusCode = error.statusCode ?? 500
-    const code = (error as { code?: string }).code ?? 'INTERNAL_ERROR'
+    const code = error.code ?? 'INTERNAL_ERROR'
     reply.status(statusCode).send({
       error: { code, message: error.message }
     })

@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import fastifyRateLimit from '@fastify/rate-limit'
-import Redis from 'ioredis'
+import { Redis } from 'ioredis'
 import fp from 'fastify-plugin'
 
 // Rate limiter MUST be a singleton — per-request instances bypass protection
@@ -10,7 +10,7 @@ function getRedisClient(): Redis {
   if (!redisClient) {
     const REDIS_URL = process.env['REDIS_URL'] ?? 'redis://localhost:6379'
     redisClient = new Redis(REDIS_URL, { lazyConnect: true })
-    redisClient.on('error', err => {
+    redisClient.on('error', (err: Error) => {
       console.error('[Redis] connection error:', err)
     })
   }
