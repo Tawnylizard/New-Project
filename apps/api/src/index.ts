@@ -72,4 +72,8 @@ async function start(): Promise<void> {
   }
 }
 
-start()
+// Only start server when this is the direct entry point, not when imported by tests
+const isMain = process.argv[1]?.endsWith('index.ts') || process.argv[1]?.endsWith('index.js')
+if (isMain) {
+  start()
+}

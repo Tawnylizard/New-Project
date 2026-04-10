@@ -1,5 +1,7 @@
 import crypto from 'node:crypto'
-import { INIT_DATA_MAX_AGE_SECONDS } from '@klyovo/shared'
+
+// Mirrors INIT_DATA_MAX_AGE_SECONDS from @klyovo/shared — 24 hours
+const INIT_DATA_MAX_AGE_SECONDS = 86400
 
 export interface TelegramUser {
   id: number

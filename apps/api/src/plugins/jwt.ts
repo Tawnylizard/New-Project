@@ -1,5 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
-import { JWT_TTL_SECONDS } from '@klyovo/shared'
+
+// Mirrors JWT_TTL_SECONDS from @klyovo/shared — 7 days
+export const JWT_TTL_SECONDS = 7 * 24 * 60 * 60
 
 export interface JwtPayload {
   userId: string
@@ -17,4 +19,3 @@ export async function requireAuth(req: FastifyRequest, reply: FastifyReply): Pro
   }
 }
 
-export { JWT_TTL_SECONDS }

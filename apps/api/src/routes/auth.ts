@@ -6,7 +6,8 @@ import { JWT_TTL_SECONDS } from '../plugins/jwt.js'
 import type { AuthTelegramResponse } from '@klyovo/shared'
 
 const authBodySchema = z.object({
-  initData: z.string().min(1)
+  initData: z.string().min(1),
+  referralCode: z.string().max(20).optional()
 })
 
 export const authRoutes: FastifyPluginAsync = async app => {
@@ -17,17 +18,28 @@ export const authRoutes: FastifyPluginAsync = async app => {
         body: {
           type: 'object',
           required: ['initData'],
-          properties: { initData: { type: 'string' } }
+          properties: { initData: { type: 'string', minLength: 1 } }
         }
       }
     },
     async (req, reply): Promise<AuthTelegramResponse> => {
-      const { initData } = authBodySchema.parse(req.body)
+      const { initData, referralCode } = authBodySchema.parse(req.body)
 
       const parsed = validateTelegramInitData(initData)
       const { user: tgUser } = parsed
 
       const displayName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ')
+
+      // Resolve referrer ID if referral code provided
+      let referredById: string | null = null
+      if (referralCode) {
+        const referrer = await prisma.user.findFirst({
+          where: { referralCode },
+          select: { id: true }
+        })
+        // Prevent self-referral (checked after upsert — referrer must be a different user)
+        if (referrer) referredById = referrer.id
+      }
 
       const user = await prisma.user.upsert({
         where: { telegramId: BigInt(tgUser.id) },
@@ -41,9 +53,20 @@ export const authRoutes: FastifyPluginAsync = async app => {
           telegramUsername: tgUser.username ?? null,
           displayName,
           plan: 'FREE',
-          consentGivenAt: new Date()
+          consentGivenAt: new Date(),
+          // Only set referredBy on creation; guard against self-referral
+          referredBy: referredById
         }
       })
+
+      // Prevent self-referral: clear if referrer === new user
+      if (user.referredBy === user.id) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { referredBy: null }
+        })
+        user.referredBy = null
+      }
 
       const token = app.jwt.sign(
         { userId: user.id, telegramId: String(user.telegramId), plan: user.plan },

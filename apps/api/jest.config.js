@@ -4,12 +4,12 @@ export default {
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
-    '^@klyovo/shared$': '<rootDir>/../../packages/shared/src/index.ts',
+    '^@klyovo/shared$': '<rootDir>/../../packages/shared/dist/index.js',
     '^@klyovo/db$': '<rootDir>/../../packages/db/src/index.ts',
     '^(\\.{1,2}/.*)\\.js$': '$1'
   },
   transform: {
-    '^.+\\.ts$': ['ts-jest', { useESM: true }]
+    '^.+\\.ts$': ['ts-jest', { useESM: true, isolatedModules: true }]
   },
   coverageThreshold: {
     global: { lines: 60 },
