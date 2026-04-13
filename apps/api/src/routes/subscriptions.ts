@@ -10,6 +10,10 @@ import { PLUS_MONTHLY_PRICE_KOPECKS, PLUS_YEARLY_PRICE_KOPECKS } from '@klyovo/s
 
 type DetectedSubscription = Prisma.DetectedSubscriptionGetPayload<object>
 
+function enrichWithAnnualCost(sub: DetectedSubscription): DetectedSubscription & { annualCost: number } {
+  return { ...sub, annualCost: Math.round(sub.estimatedAmount * (365 / sub.frequencyDays)) }
+}
+
 const statusQuerySchema = z.object({
   status: z.enum(['active', 'cancelled', 'ignored']).optional()
 })
@@ -23,8 +27,8 @@ export const subscriptionRoutes: FastifyPluginAsync = async app => {
   app.addHook('preHandler', requireAuth)
 
   // POST /subscriptions/scan — detect recurring payments and upsert to DB
-  app.post('/scan', async (_req, reply): Promise<ScanSubscriptionsResponse> => {
-    const payload = _req.user as JwtPayload
+  app.post('/scan', async (req): Promise<ScanSubscriptionsResponse> => {
+    const payload = req.user as JwtPayload
     const { userId } = payload
 
     const transactions = await prisma.transaction.findMany({
@@ -33,40 +37,36 @@ export const subscriptionRoutes: FastifyPluginAsync = async app => {
 
     const detected = SubscriptionDetector.detect(transactions)
 
-    for (const sub of detected) {
-      await prisma.detectedSubscription.upsert({
-        where: { userId_merchantName: { userId, merchantName: sub.merchantName } },
-        create: {
-          userId,
-          merchantName: sub.merchantName,
-          estimatedAmount: sub.estimatedAmount,
-          frequencyDays: sub.frequencyDays,
-          lastChargeDate: sub.lastChargeDate,
-          occurrences: sub.occurrences,
-          status: 'active'
-        },
-        update: {
-          estimatedAmount: sub.estimatedAmount,
-          frequencyDays: sub.frequencyDays,
-          lastChargeDate: sub.lastChargeDate,
-          occurrences: sub.occurrences
-          // status intentionally omitted — preserve user's cancelled/ignored choice
-        }
-      })
-    }
+    await Promise.all(
+      detected.map(sub =>
+        prisma.detectedSubscription.upsert({
+          where: { userId_merchantName: { userId, merchantName: sub.merchantName } },
+          create: {
+            userId,
+            merchantName: sub.merchantName,
+            estimatedAmount: sub.estimatedAmount,
+            frequencyDays: sub.frequencyDays,
+            lastChargeDate: sub.lastChargeDate,
+            occurrences: sub.occurrences,
+            status: 'active'
+          },
+          update: {
+            estimatedAmount: sub.estimatedAmount,
+            frequencyDays: sub.frequencyDays,
+            lastChargeDate: sub.lastChargeDate,
+            occurrences: sub.occurrences
+            // status intentionally omitted — preserve user's cancelled/ignored choice
+          }
+        })
+      )
+    )
 
     const allSubs = await prisma.detectedSubscription.findMany({
       where: { userId },
       orderBy: { estimatedAmount: 'desc' }
     })
 
-    const enriched = allSubs.map((sub: DetectedSubscription) => ({
-      ...sub,
-      annualCost: Math.round(sub.estimatedAmount * (365 / sub.frequencyDays))
-    }))
-
-    reply.status(200)
-    return { found: detected.length, subscriptions: enriched }
+    return { found: detected.length, subscriptions: allSubs.map(enrichWithAnnualCost) }
   })
 
   // GET /subscriptions — detected parasitic subscriptions
@@ -80,17 +80,16 @@ export const subscriptionRoutes: FastifyPluginAsync = async app => {
       orderBy: { estimatedAmount: 'desc' }
     })
 
-    const enriched = subs.map((sub: DetectedSubscription) => ({
-      ...sub,
-      annualCost: Math.round(sub.estimatedAmount * (365 / sub.frequencyDays))
-    }))
+    const enriched = subs.map(enrichWithAnnualCost)
 
-    const totalMonthly = subs
-      .filter((s: DetectedSubscription) => s.status === 'active')
-      .reduce((sum: number, s: DetectedSubscription) => sum + Math.round(s.estimatedAmount * (30 / s.frequencyDays)), 0)
-    const totalAnnual = subs
-      .filter((s: DetectedSubscription) => s.status === 'active')
-      .reduce((sum: number, s: DetectedSubscription) => sum + Math.round(s.estimatedAmount * (365 / s.frequencyDays)), 0)
+    let totalMonthly = 0
+    let totalAnnual = 0
+    for (const s of subs) {
+      if (s.status === 'active') {
+        totalMonthly += Math.round(s.estimatedAmount * (30 / s.frequencyDays))
+        totalAnnual += Math.round(s.estimatedAmount * (365 / s.frequencyDays))
+      }
+    }
 
     return { subscriptions: enriched, totalMonthly, totalAnnual }
   })
