@@ -1,25 +1,50 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client.js'
 import { useAppStore } from '../store/useAppStore.js'
 import { SpendingChart } from '../components/SpendingChart.js'
 import { TransactionList } from '../components/TransactionList.js'
-import type { Transaction } from '@klyovo/shared'
+import type { AnalyticsSummaryResponse, AnalyticsPeriod, Transaction } from '@klyovo/shared'
 
 interface TransactionsResponse {
   transactions: Transaction[]
 }
 
+const PERIOD_LABELS: Record<AnalyticsPeriod, string> = {
+  month: 'Этот мес.',
+  last_month: 'Прошлый',
+  '3months': '3 месяца'
+}
+
+function formatAmount(kopecks: number): string {
+  const rubles = kopecks / 100
+  if (rubles >= 1_000_000) return `₽${(rubles / 1_000_000).toFixed(1)} млн`
+  if (rubles >= 1_000) return `₽${(rubles / 1_000).toFixed(0)} тыс`
+  return `₽${rubles.toFixed(0)}`
+}
+
 export function Dashboard(): JSX.Element {
   const navigate = useNavigate()
   const { user } = useAppStore()
+  const [period, setPeriod] = useState<AnalyticsPeriod>('month')
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: () => apiClient.get<TransactionsResponse>('/transactions').then(r => r.data)
+  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['analytics', period],
+    queryFn: () =>
+      apiClient
+        .get<AnalyticsSummaryResponse>(`/analytics/summary?period=${period}`)
+        .then(r => r.data)
   })
 
-  const transactions = data?.transactions ?? []
+  const { data: txnData } = useQuery({
+    queryKey: ['transactions'],
+    queryFn: () =>
+      apiClient.get<TransactionsResponse>('/transactions').then(r => r.data)
+  })
+
+  const transactions = txnData?.transactions ?? []
+  const hasNoTransactions = !analyticsLoading && analytics?.transactionCount === 0 && transactions.length === 0
 
   return (
     <div className="min-h-screen bg-tg-bg pb-20">
@@ -48,12 +73,53 @@ export function Dashboard(): JSX.Element {
           🔥 Жёсткий режим
         </button>
 
-        {/* Spending chart */}
-        {isLoading ? (
+        {/* Period selector */}
+        <div className="flex gap-2">
+          {(Object.keys(PERIOD_LABELS) as AnalyticsPeriod[]).map(p => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
+                period === p
+                  ? 'bg-tg-button text-tg-button-text'
+                  : 'bg-tg-secondary text-tg-hint'
+              }`}
+            >
+              {PERIOD_LABELS[p]}
+            </button>
+          ))}
+        </div>
+
+        {/* Spending summary */}
+        {analyticsLoading ? (
+          <div className="h-20 bg-tg-secondary rounded-2xl animate-pulse" />
+        ) : analytics && analytics.transactionCount > 0 ? (
+          <div className="bg-tg-secondary rounded-2xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-tg-hint mb-0.5">Потрачено</p>
+              <p className="text-2xl font-bold text-tg-text">
+                {formatAmount(analytics.totalKopecks)}
+              </p>
+            </div>
+            {analytics.changePercent !== null && (
+              <div
+                className={`text-sm font-bold px-3 py-1.5 rounded-xl ${
+                  analytics.changePercent <= 0
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-red-100 text-red-600'
+                }`}
+              >
+                {analytics.changePercent > 0 ? '+' : ''}
+                {analytics.changePercent}%
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {/* Chart or empty state */}
+        {analyticsLoading ? (
           <div className="h-48 bg-tg-secondary rounded-2xl animate-pulse" />
-        ) : transactions.length > 0 ? (
-          <SpendingChart transactions={transactions} />
-        ) : (
+        ) : hasNoTransactions ? (
           <div className="bg-tg-secondary rounded-2xl p-6 text-center space-y-3">
             <p className="text-4xl">📊</p>
             <p className="text-tg-text font-medium">Нет данных</p>
@@ -65,7 +131,13 @@ export function Dashboard(): JSX.Element {
               Загрузить CSV
             </button>
           </div>
-        )}
+        ) : analytics && analytics.transactionCount === 0 ? (
+          <div className="bg-tg-secondary rounded-2xl p-4 text-center">
+            <p className="text-tg-hint text-sm">Нет транзакций за этот период</p>
+          </div>
+        ) : analytics ? (
+          <SpendingChart topCategories={analytics.topCategories} totalKopecks={analytics.totalKopecks} />
+        ) : null}
 
         {/* Quick stats */}
         <div className="grid grid-cols-2 gap-3">
