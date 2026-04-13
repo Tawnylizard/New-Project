@@ -51,7 +51,7 @@
       "id": "bnpl-tracker",
       "name": "BNPL-трекер",
       "description": "Aggregate Долями/Сплит/Подели obligations, show payment timeline",
-      "status": "planned",
+      "status": "done",
       "priority": "must_have",
       "moscow": "M",
       "phase": "mvp",
