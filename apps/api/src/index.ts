@@ -2,6 +2,7 @@ import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 import multipart from '@fastify/multipart'
+import { ZodError } from 'zod'
 import { authRoutes } from './routes/auth.js'
 import { transactionRoutes } from './routes/transactions.js'
 import { roastRoutes } from './routes/roast.js'
@@ -51,6 +52,10 @@ export function buildApp(): ReturnType<typeof Fastify> {
   // ─── Error handler ────────────────────────────────────────────────────────
   app.setErrorHandler((error: Error & { statusCode?: number; code?: string }, _req, reply) => {
     app.log.error(error)
+    if (error instanceof ZodError) {
+      reply.status(400).send({ error: { code: 'VALIDATION_ERROR', message: error.errors[0]?.message ?? 'Invalid input' } })
+      return
+    }
     const statusCode = error.statusCode ?? 500
     const code = error.code ?? 'INTERNAL_ERROR'
     reply.status(statusCode).send({

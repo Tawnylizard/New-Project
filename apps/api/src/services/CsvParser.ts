@@ -59,6 +59,26 @@ function parseAmount(amountStr: string): number | null {
   return Math.round(Math.abs(value) * 100)
 }
 
+function splitQuotedRow(row: string, delimiter: string): string[] {
+  const result: string[] = []
+  let current = ''
+  let inQuotes = false
+
+  for (let i = 0; i < row.length; i++) {
+    const ch = row[i]!
+    if (ch === '"') {
+      inQuotes = !inQuotes
+    } else if (ch === delimiter && !inQuotes) {
+      result.push(current.trim())
+      current = ''
+    } else {
+      current += ch
+    }
+  }
+  result.push(current.trim())
+  return result
+}
+
 function decodeBuffer(buffer: Buffer): string {
   try {
     const utf8 = iconv.decode(buffer, 'utf8')
@@ -120,10 +140,10 @@ function parseSber(rows: string[]): ParsedTransaction[] | ParseError {
 function parseTbank(rows: string[]): ParsedTransaction[] | ParseError {
   const transactions: ParsedTransaction[] = []
 
-  // Find header row
+  // Find header row (may be quoted)
   let headerIdx = -1
   for (let i = 0; i < rows.length; i++) {
-    if (rows[i]?.startsWith('Дата операции')) {
+    if ((rows[i] ?? '').replace(/^"/, '').startsWith('Дата операции')) {
       headerIdx = i
       break
     }
@@ -134,7 +154,7 @@ function parseTbank(rows: string[]): ParsedTransaction[] | ParseError {
     const row = rows[i]
     if (!row?.trim()) continue
 
-    const cols = row.split(',').map(c => c.replace(/^"|"$/g, '').trim())
+    const cols = splitQuotedRow(row, ',')
     if (cols.length < 7) continue
 
     const dateStr = cols[0] ?? ''

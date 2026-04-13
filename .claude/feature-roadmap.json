@@ -1,13 +1,13 @@
 {
   "project": "Клёво",
   "version": "0.1.0-mvp",
-  "last_updated": "2026-04-09",
+  "last_updated": "2026-04-13",
   "features": [
     {
       "id": "telegram-auth",
       "name": "Авторизация через Telegram",
       "description": "HMAC-SHA256 initData validation, JWT issue, find-or-create user",
-      "status": "next",
+      "status": "done",
       "priority": "must_have",
       "moscow": "M",
       "phase": "mvp",
@@ -18,7 +18,7 @@
       "id": "csv-import",
       "name": "CSV импорт (Сбер + Т-Банк)",
       "description": "Parse Sberbank (CP1251, semicolons) and Tinkoff (UTF-8, commas) CSV exports",
-      "status": "next",
+      "status": "done",
       "priority": "must_have",
       "moscow": "M",
       "phase": "mvp",
