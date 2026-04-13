@@ -29,7 +29,7 @@
       "id": "roast-mode",
       "name": "Жёсткий режим (Roast Mode)",
       "description": "AI-generated spending roast via YandexGPT Pro with GigaChat fallback",
-      "status": "next",
+      "status": "done",
       "priority": "must_have",
       "moscow": "M",
       "phase": "mvp",
