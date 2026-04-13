@@ -40,7 +40,7 @@
       "id": "subscription-hunter",
       "name": "Охотник на подписки-паразиты",
       "description": "Detect recurring payments, show dead subscriptions, calculate annual cost",
-      "status": "planned",
+      "status": "done",
       "priority": "must_have",
       "moscow": "M",
       "phase": "mvp",
