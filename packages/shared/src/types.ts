@@ -26,6 +26,24 @@ export type KlyovoSubscriptionStatus = 'active' | 'cancelled' | 'expired'
 
 export type RoastMode = 'harsh' | 'soft'
 
+export type AnalyticsPeriod = 'month' | 'last_month' | '3months'
+
+export interface AnalyticsCategoryStat {
+  category: TransactionCategory
+  totalKopecks: number
+  percentage: number
+  transactionCount: number
+}
+
+export interface AnalyticsSummaryResponse {
+  period: { from: string; to: string }
+  totalKopecks: number
+  previousTotalKopecks: number
+  changePercent: number | null
+  topCategories: AnalyticsCategoryStat[]
+  transactionCount: number
+}
+
 // ─── Core domain types ────────────────────────────────────────────────────────
 
 export interface User {

@@ -4,6 +4,7 @@ import { prisma } from '@klyovo/db'
 import { requireAuth } from '../plugins/jwt.js'
 import { CsvParser } from '../services/CsvParser.js'
 import { SubscriptionDetector } from '../services/SubscriptionDetector.js'
+import { AnalyticsService } from '../services/AnalyticsService.js'
 import type { JwtPayload } from '../plugins/jwt.js'
 import type { ImportTransactionsResponse } from '@klyovo/shared'
 
@@ -113,6 +114,9 @@ export const transactionRoutes: FastifyPluginAsync = async app => {
           create: { userId, ...sub }
         })
       }
+
+      // Invalidate analytics cache after import
+      await AnalyticsService.invalidateCache(userId)
 
       const dates = parsed.map(t => t.transactionDate)
       const minDate = dates.reduce((a, b) => (a < b ? a : b))
