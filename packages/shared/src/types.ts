@@ -18,6 +18,44 @@ export type TransactionSource = 'CSV_SBER' | 'CSV_TBANK' | 'MANUAL'
 
 export type BnplService = 'dolyami' | 'split' | 'podeli'
 
+export type BnplStatus = 'active' | 'completed' | 'overdue' | 'dismissed'
+
+export interface BnplObligation {
+  id: string
+  userId: string
+  bnplService: string
+  merchantName: string
+  merchantDisplay: string
+  installmentAmount: number
+  totalInstallments: number
+  paidInstallments: number
+  firstPaymentDate: Date
+  lastPaymentDate: Date
+  nextPaymentDate: Date | null
+  frequencyDays: number
+  status: BnplStatus
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface BnplSummary {
+  totalDebtKopecks: number
+  nextPaymentDate: string | null
+  nextPaymentAmount: number
+  overdueCount: number
+  activeCount: number
+}
+
+export interface BnplListResponse {
+  obligations: Array<BnplObligation & { remainingAmount: number }>
+  summary: BnplSummary
+}
+
+export interface ScanBnplResponse {
+  found: number
+  obligations: Array<BnplObligation & { remainingAmount: number }>
+}
+
 export type SubscriptionStatus = 'active' | 'cancelled' | 'ignored'
 
 export type KlyovoSubscriptionPlan = 'plus_monthly' | 'plus_yearly'

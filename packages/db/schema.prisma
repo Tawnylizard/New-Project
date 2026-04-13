@@ -61,10 +61,11 @@ model User {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  transactions   Transaction[]
-  roastSessions  RoastSession[]
-  subscriptions  DetectedSubscription[]
-  klyovoSubs     KlyovoSubscription[]
+  transactions      Transaction[]
+  roastSessions     RoastSession[]
+  subscriptions     DetectedSubscription[]
+  klyovoSubs        KlyovoSubscription[]
+  bnplObligations   BnplObligation[]
 }
 
 model Transaction {
@@ -130,5 +131,35 @@ model KlyovoSubscription {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, status])
+}
+
+enum BnplStatus {
+  active
+  completed
+  overdue
+  dismissed
+}
+
+model BnplObligation {
+  id                String     @id @default(uuid())
+  userId            String
+  bnplService       String
+  merchantName      String
+  merchantDisplay   String
+  installmentAmount Int
+  totalInstallments Int
+  paidInstallments  Int
+  firstPaymentDate  DateTime
+  lastPaymentDate   DateTime
+  nextPaymentDate   DateTime?
+  frequencyDays     Int
+  status            BnplStatus @default(active)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bnplService, merchantName, firstPaymentDate])
   @@index([userId, status])
 }

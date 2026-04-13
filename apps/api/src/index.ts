@@ -9,6 +9,7 @@ import { roastRoutes } from './routes/roast.js'
 import { subscriptionRoutes } from './routes/subscriptions.js'
 import { webhookRoutes } from './routes/webhooks.js'
 import { analyticsRoutes } from './routes/analytics.js'
+import { bnplRoutes } from './routes/bnpl.js'
 import { rateLimitPlugin } from './plugins/rateLimit.js'
 import { MAX_CSV_SIZE_BYTES } from '@klyovo/shared'
 
@@ -52,6 +53,7 @@ export function buildApp(): ReturnType<typeof Fastify> {
   app.register(subscriptionRoutes, { prefix: '/subscriptions' })
   app.register(webhookRoutes, { prefix: '/webhooks' })
   app.register(analyticsRoutes, { prefix: '/analytics' })
+  app.register(bnplRoutes, { prefix: '/bnpl' })
 
   // ─── Health ───────────────────────────────────────────────────────────────
   app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }))
