@@ -84,7 +84,7 @@
       "id": "spending-dashboard",
       "name": "Dashboard анализа трат",
       "description": "Top-5 categories, period comparison, pie chart (Recharts), RU-specific categories",
-      "status": "planned",
+      "status": "done",
       "priority": "must_have",
       "moscow": "M",
       "phase": "mvp",
