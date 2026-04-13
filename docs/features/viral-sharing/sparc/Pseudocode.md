@@ -83,16 +83,19 @@ FUNCTION buildShareText(roast, referralLink):
   IF roast.roastText.length > 120:
     excerpt += "..."
 
-  topCategory = getTopCategory(roast.spendingSummary)
-  topAmount   = formatRubles(topCategory.amountKopecks)
   totalAmount = formatRubles(roast.spendingSummary.totalAmount)
+  topCategory = getTopCategory(roast.spendingSummary)
+
+  // Build top spend line only when data is available
+  topSpendLine = ""
+  IF topCategory IS NOT NULL:
+    topSpendLine = "\nТоп расход: {topCategory.name} — {formatRubles(topCategory.amountKopecks)}"
 
   shareText = """
 🔥 Клёво разнесло мои траты в пух и прах!
 
 «{excerpt}»
-
-Топ расход: {topCategory.name} — {topAmount}
+{topSpendLine}
 Всего за месяц: {totalAmount}
 
 👉 Попробуй сам: {referralLink}
@@ -102,6 +105,8 @@ FUNCTION buildShareText(roast, referralLink):
 
 FUNCTION getTopCategory(spendingSummary):
   // spendingSummary.byCategory is array of { category, amountKopecks }
+  IF spendingSummary.byCategory IS EMPTY:
+    RETURN NULL
   RETURN spendingSummary.byCategory.sort by amountKopecks DESC [0]
 
 FUNCTION formatRubles(kopecks):
@@ -116,9 +121,12 @@ FUNCTION onClickSendToFriend(shareText, referralLink):
   
   TRY:
     window.Telegram.WebApp.openTelegramLink(shareUrl)
-  CATCH:
-    // Fallback: open in browser
-    window.open(shareUrl, "_blank")
+  CATCH primary_error:
+    TRY:
+      window.open(shareUrl, "_blank")
+    CATCH secondary_error:
+      LOG "Share failed entirely" (non-fatal)
+      // Modal stays open — user can still use copy-link button
 
 FUNCTION buildTelegramShareUrl(shareText, referralLink):
   RETURN "tg://msg_url?" +

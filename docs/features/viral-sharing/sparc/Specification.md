@@ -144,7 +144,7 @@ interface ReferralStatsProps {
 }
 ```
 
-**Shown in:** Profile/Settings page (future) or at bottom of ShareModal.
+**Shown in:** Bottom of ShareModal (MVP). Profile/Settings page is v1.0 scope.
 
 ---
 
