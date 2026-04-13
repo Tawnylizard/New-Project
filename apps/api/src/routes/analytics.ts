@@ -14,7 +14,7 @@ export const analyticsRoutes: FastifyPluginAsync = async app => {
     const payload = req.user as JwtPayload
     const { userId } = payload
 
-    const periodParse = periodSchema.safeParse(req.query['period'] ?? 'month')
+    const periodParse = periodSchema.safeParse(req.query['period'])
     if (!periodParse.success) {
       reply.status(400)
       throw Object.assign(new Error('Invalid period. Use: month, last_month, 3months'), {

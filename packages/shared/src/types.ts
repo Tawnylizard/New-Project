@@ -190,6 +190,7 @@ export type ApiErrorCode =
   | 'RATE_LIMIT'
   | 'NOT_FOUND'
   | 'UNAUTHORIZED'
+  | 'VALIDATION_ERROR'
   | 'INTERNAL_ERROR'
 
 export interface ApiError {

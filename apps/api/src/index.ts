@@ -14,9 +14,14 @@ import { MAX_CSV_SIZE_BYTES } from '@klyovo/shared'
 
 const PORT = Number(process.env['PORT'] ?? 3000)
 const HOST = process.env['HOST'] ?? '0.0.0.0'
-const JWT_SECRET = process.env['JWT_SECRET'] ?? 'dev_jwt_secret_change_in_production'
 
 export function buildApp(): ReturnType<typeof Fastify> {
+  const JWT_SECRET = process.env['JWT_SECRET']
+  if (!JWT_SECRET) {
+    console.error('FATAL: JWT_SECRET environment variable is not set')
+    process.exit(1)
+  }
+
   const app = Fastify({
     logger: {
       level: process.env['NODE_ENV'] === 'production' ? 'warn' : 'info'

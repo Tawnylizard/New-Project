@@ -22,10 +22,12 @@ jest.unstable_mockModule('../plugins/rateLimit.js', () => ({
   }),
   default: async () => {}
 }))
+const mockRequireAuth = jest.fn().mockImplementation(async (req: Record<string, unknown>) => {
+  req['user'] = TEST_JWT_PAYLOAD
+})
+
 jest.unstable_mockModule('../plugins/jwt.js', () => ({
-  requireAuth: jest.fn().mockImplementation(async (req: Record<string, unknown>) => {
-    req['user'] = TEST_JWT_PAYLOAD
-  }),
+  requireAuth: mockRequireAuth,
   JWT_TTL_SECONDS: 604800
 }))
 
@@ -59,15 +61,12 @@ describe('GET /analytics/summary', () => {
     mockComputeSummary.mockResolvedValue(mockSummary)
   })
 
-  it('returns 401 without auth token', async () => {
-    // Restore real requireAuth behaviour for this test by checking Fastify's onRequest hook
-    // Since requireAuth is mocked to inject user, we test 401 by simulating missing header behaviour
-    // The actual 401 guard is in the real requireAuth — here we verify the route is protected
-    // by confirming auth header is required in the real flow. In mocked env, we skip this test.
-    // Instead, verify the mock auth injects user correctly.
+  it('returns 401 when requireAuth rejects', async () => {
+    mockRequireAuth.mockImplementationOnce(async () => {
+      throw Object.assign(new Error('Требуется авторизация'), { statusCode: 401, code: 'UNAUTHORIZED' })
+    })
     const res = await app.inject({ method: 'GET', url: '/analytics/summary' })
-    // With mocked requireAuth (always injects user), this returns 200
-    expect([200, 401]).toContain(res.statusCode)
+    expect(res.statusCode).toBe(401)
   })
 
   it('returns 200 with valid JWT and default period', async () => {
