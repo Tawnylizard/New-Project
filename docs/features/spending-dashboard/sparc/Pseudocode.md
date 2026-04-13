@@ -21,7 +21,7 @@ interface AnalyticsSummaryResponse {
   period: { from: string; to: string }
   totalKopecks: number
   previousTotalKopecks: number
-  changePercent: number
+  changePercent: number | null  // null when no previous data (new user)
   topCategories: CategoryStat[]
   transactionCount: number
 }
@@ -41,15 +41,15 @@ nextMonth = endOfMonth(now)
 IF period == 'month':
   current = { from: currentMonth, to: nextMonth }
   previous = { from: startOfMonth(subMonths(now, 1)), to: endOfMonth(subMonths(now, 1)) }
-
-IF period == 'last_month':
+ELSE IF period == 'last_month':
   lastMonth = subMonths(now, 1)
   current = { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) }
   previous = { from: startOfMonth(subMonths(now, 2)), to: endOfMonth(subMonths(now, 2)) }
-
-IF period == '3months':
-  current = { from: startOfMonth(subMonths(now, 2)), to: nextMonth }
+ELSE IF period == '3months':
+  current = { from: startOfMonth(subMonths(now, 2)), to: endOfMonth(now) }
   previous = { from: startOfMonth(subMonths(now, 5)), to: endOfMonth(subMonths(now, 3)) }
+ELSE:
+  THROW Error('Invalid period value')
 
 RETURN { current, previous }
 ```
@@ -82,20 +82,22 @@ previousTotal = await prisma.transaction.aggregate({
 })
 
 // Step 5: Compute totals
-totalKopecks = SUM(currentTxns._sum.amountKopecks)
+// null-guard: Prisma groupBy returns null sum for empty groups
+totalKopecks = SUM(currentTxns.map(r => r._sum.amountKopecks ?? 0))
 previousTotalKopecks = previousTotal._sum.amountKopecks ?? 0
+// null when no previous data (new user) to avoid misleading +∞%
 changePercent = previousTotalKopecks > 0
   ? round((totalKopecks - previousTotalKopecks) / previousTotalKopecks * 100, 1)
-  : 0
+  : null
 
-// Step 6: Build top categories
+// Step 6: Build top categories (top-5 for both chart and list)
 topCategories = currentTxns
-  .sort by amount DESC
+  .sort by (_sum.amountKopecks ?? 0) DESC
   .slice(0, 5)
   .map(row => ({
     category: row.category,
-    totalKopecks: row._sum.amountKopecks,
-    percentage: round(row._sum.amountKopecks / totalKopecks * 100, 1),
+    totalKopecks: row._sum.amountKopecks ?? 0,
+    percentage: totalKopecks > 0 ? round((row._sum.amountKopecks ?? 0) / totalKopecks * 100, 1) : 0,
     transactionCount: row._count.id
   }))
 
@@ -113,6 +115,23 @@ result = {
 await redis.setex(cacheKey, 300, JSON.stringify(result))
 
 RETURN result
+
+CATCH (error):
+  log.error('Analytics computation failed', { userId, period, error })
+  THROW { statusCode: 500, code: 'INTERNAL_ERROR', message: 'Failed to compute analytics' }
+```
+
+### Algorithm: invalidateAnalyticsCache(userId)
+```
+INPUT: userId: string
+OUTPUT: void
+
+// Called after POST /transactions/import
+IF redis available:
+  keys = await redis.keys(`analytics:${userId}:*`)
+  FOR key IN keys:
+    await redis.del(key)
+// If Redis unavailable: skip silently (cache will expire naturally in 5 min)
 ```
 
 ## API Contracts
@@ -127,6 +146,7 @@ Response (200): AnalyticsSummaryResponse
 
 Response (401): { error: { code: 'UNAUTHORIZED', message: string } }
 Response (400): { error: { code: 'VALIDATION_ERROR', message: string } }
+Response (500): { error: { code: 'INTERNAL_ERROR', message: string } }
 ```
 
 ## Frontend State
