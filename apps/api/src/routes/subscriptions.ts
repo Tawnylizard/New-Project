@@ -3,8 +3,9 @@ import { z } from 'zod'
 import { prisma, type Prisma } from '@klyovo/db'
 import { requireAuth } from '../plugins/jwt.js'
 import { PaymentService } from '../services/PaymentService.js'
+import { SubscriptionDetector } from '../services/SubscriptionDetector.js'
 import type { JwtPayload } from '../plugins/jwt.js'
-import type { SubscriptionListResponse, CheckoutResponse } from '@klyovo/shared'
+import type { SubscriptionListResponse, CheckoutResponse, ScanSubscriptionsResponse } from '@klyovo/shared'
 import { PLUS_MONTHLY_PRICE_KOPECKS, PLUS_YEARLY_PRICE_KOPECKS } from '@klyovo/shared'
 
 type DetectedSubscription = Prisma.DetectedSubscriptionGetPayload<object>
@@ -20,6 +21,53 @@ const checkoutSchema = z.object({
 
 export const subscriptionRoutes: FastifyPluginAsync = async app => {
   app.addHook('preHandler', requireAuth)
+
+  // POST /subscriptions/scan — detect recurring payments and upsert to DB
+  app.post('/scan', async (_req, reply): Promise<ScanSubscriptionsResponse> => {
+    const payload = _req.user as JwtPayload
+    const { userId } = payload
+
+    const transactions = await prisma.transaction.findMany({
+      where: { userId }
+    })
+
+    const detected = SubscriptionDetector.detect(transactions)
+
+    for (const sub of detected) {
+      await prisma.detectedSubscription.upsert({
+        where: { userId_merchantName: { userId, merchantName: sub.merchantName } },
+        create: {
+          userId,
+          merchantName: sub.merchantName,
+          estimatedAmount: sub.estimatedAmount,
+          frequencyDays: sub.frequencyDays,
+          lastChargeDate: sub.lastChargeDate,
+          occurrences: sub.occurrences,
+          status: 'active'
+        },
+        update: {
+          estimatedAmount: sub.estimatedAmount,
+          frequencyDays: sub.frequencyDays,
+          lastChargeDate: sub.lastChargeDate,
+          occurrences: sub.occurrences
+          // status intentionally omitted — preserve user's cancelled/ignored choice
+        }
+      })
+    }
+
+    const allSubs = await prisma.detectedSubscription.findMany({
+      where: { userId },
+      orderBy: { estimatedAmount: 'desc' }
+    })
+
+    const enriched = allSubs.map((sub: DetectedSubscription) => ({
+      ...sub,
+      annualCost: Math.round(sub.estimatedAmount * (365 / sub.frequencyDays))
+    }))
+
+    reply.status(200)
+    return { found: detected.length, subscriptions: enriched }
+  })
 
   // GET /subscriptions — detected parasitic subscriptions
   app.get('/', async (req, reply): Promise<SubscriptionListResponse> => {

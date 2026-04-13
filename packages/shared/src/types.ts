@@ -166,6 +166,11 @@ export interface SubscriptionListResponse {
   totalAnnual: number
 }
 
+export interface ScanSubscriptionsResponse {
+  found: number
+  subscriptions: Array<DetectedSubscription & { annualCost: number }>
+}
+
 export interface CheckoutRequest {
   plan: KlyovoSubscriptionPlan
   returnUrl: string

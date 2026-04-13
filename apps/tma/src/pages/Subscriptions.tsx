@@ -17,6 +17,11 @@ export function Subscriptions(): JSX.Element {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['subscriptions'] })
   })
 
+  const scan = useMutation({
+    mutationFn: () => apiClient.post('/subscriptions/scan'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subscriptions'] })
+  })
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-tg-bg p-4 space-y-3">
@@ -43,10 +48,17 @@ export function Subscriptions(): JSX.Element {
       </div>
 
       {subs.length === 0 ? (
-        <div className="text-center py-12 space-y-2">
-          <p className="text-4xl">🎉</p>
-          <p className="text-tg-text font-medium">Подписок-паразитов нет</p>
-          <p className="text-tg-hint text-sm">Загрузи выписку за 2+ месяца для анализа</p>
+        <div className="text-center py-12 space-y-4">
+          <p className="text-4xl">🔍</p>
+          <p className="text-tg-text font-medium">Подписки не найдены</p>
+          <p className="text-tg-hint text-sm">Загрузи выписку за 2+ месяца, потом нажми «Найти»</p>
+          <button
+            onClick={() => scan.mutate()}
+            disabled={scan.isPending}
+            className="bg-tg-button text-tg-button-text font-medium px-6 py-3 rounded-2xl disabled:opacity-50"
+          >
+            {scan.isPending ? 'Ищем...' : 'Найти подписки'}
+          </button>
         </div>
       ) : (
         <div className="space-y-3">
