@@ -16,7 +16,7 @@ export type TransactionCategory =
 
 export type TransactionSource = 'CSV_SBER' | 'CSV_TBANK' | 'MANUAL'
 
-export type BnplService = 'dolyami' | 'split' | 'podeli'
+export type BnplService = 'dolyami' | 'split' | 'podeli' | 'yandex_split'
 
 export type BnplStatus = 'active' | 'completed' | 'overdue' | 'dismissed'
 

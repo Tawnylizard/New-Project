@@ -4,17 +4,36 @@ import { prisma, type Prisma } from '@klyovo/db'
 import { requireAuth } from '../plugins/jwt.js'
 import { BnplDetector } from '../services/BnplDetector.js'
 import type { JwtPayload } from '../plugins/jwt.js'
-import type { BnplListResponse, ScanBnplResponse, BnplSummary } from '@klyovo/shared'
+import type { BnplListResponse, ScanBnplResponse, BnplSummary, BnplService } from '@klyovo/shared'
 
 type BnplObligation = Prisma.BnplObligationGetPayload<object>
+
+const PROVIDER_TO_SERVICE: Record<string, BnplService> = {
+  'Долями': 'dolyami',
+  'Сплит': 'split',
+  'Подели': 'podeli',
+  'Яндекс Сплит': 'yandex_split'
+}
 
 function computeRemainingAmount(ob: BnplObligation): number {
   const remaining = Math.max(0, ob.totalInstallments - ob.paidInstallments)
   return remaining * ob.installmentAmount
 }
 
+/**
+ * Derive current effective status without a DB write.
+ * If stored status is active/overdue, recompute from nextPaymentDate.
+ * Dismissed/completed statuses are preserved as-is.
+ */
+function deriveStatus(ob: BnplObligation): BnplObligation['status'] {
+  if (ob.status === 'dismissed' || ob.status === 'completed') return ob.status
+  if (ob.paidInstallments >= ob.totalInstallments) return 'completed'
+  if (ob.nextPaymentDate && ob.nextPaymentDate < new Date()) return 'overdue'
+  return 'active'
+}
+
 function enrichObligation(ob: BnplObligation): BnplObligation & { remainingAmount: number } {
-  return { ...ob, remainingAmount: computeRemainingAmount(ob) }
+  return { ...ob, status: deriveStatus(ob), remainingAmount: computeRemainingAmount(ob) }
 }
 
 function computeSummary(obligations: BnplObligation[]): BnplSummary {
@@ -104,19 +123,18 @@ export const bnplRoutes: FastifyPluginAsync = async app => {
     // Update isBnpl flag on matched transactions
     if (detected.length > 0) {
       await Promise.all(
-        detected.map(ob =>
-          prisma.transaction.updateMany({
+        detected.map(ob => {
+          const bnplService = PROVIDER_TO_SERVICE[ob.bnplService]
+          if (!bnplService) return Promise.resolve()
+          return prisma.transaction.updateMany({
             where: {
               userId,
               merchantNormalized: ob.merchantName,
               isBnpl: false
             },
-            data: {
-              isBnpl: true,
-              bnplService: ob.bnplService.toLowerCase().replace(/\s+/g, '_') as 'dolyami' | 'split' | 'podeli'
-            }
+            data: { isBnpl: true, bnplService }
           })
-        )
+        })
       )
     }
 
