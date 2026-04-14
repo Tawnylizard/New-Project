@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
+import { prisma } from '@klyovo/db'
 import { requireAuth } from '../plugins/jwt.js'
 import { GoalService } from '../services/GoalService.js'
 import type { JwtPayload } from '../plugins/jwt.js'
@@ -36,7 +37,7 @@ export const goalRoutes: FastifyPluginAsync = async app => {
     const { userId } = req.user as JwtPayload
     const body = createGoalSchema.parse(req.body)
 
-    const user = await import('@klyovo/db').then(m => m.prisma.user.findUniqueOrThrow({ where: { id: userId } }))
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } })
 
     const deadline = body.deadline ? new Date(body.deadline) : null
 
