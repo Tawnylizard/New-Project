@@ -15,6 +15,7 @@ const shareSchema = z.object({
   achievementType: z.enum(ACHIEVEMENT_TYPES)
 })
 
+// GET /streaks + POST /streaks/share
 export const streakRoutes: FastifyPluginAsync = async app => {
   app.addHook('preHandler', requireAuth)
 
@@ -24,12 +25,6 @@ export const streakRoutes: FastifyPluginAsync = async app => {
     return StreakService.getStreaks(userId)
   })
 
-  // GET /achievements — get all achievements (unlocked + locked)
-  app.get('/achievements', async (req): Promise<GetAchievementsResponse> => {
-    const { userId } = req.user as JwtPayload
-    return AchievementService.getAchievements(userId)
-  })
-
   // POST /streaks/share — record share action, return share text
   app.post<{ Body: z.infer<typeof shareSchema> }>(
     '/share',
@@ -37,9 +32,8 @@ export const streakRoutes: FastifyPluginAsync = async app => {
       const { userId } = req.user as JwtPayload
       const { achievementType } = shareSchema.parse(req.body)
 
-      // Verify the achievement is unlocked
-      const { unlocked } = await AchievementService.getAchievements(userId)
-      const isUnlocked = unlocked.some(a => a.type === achievementType)
+      // Verify the achievement is unlocked (checks against userId — no cross-user risk)
+      const isUnlocked = await AchievementService.isUnlocked(userId, achievementType)
 
       if (!isUnlocked) {
         reply.status(400)
@@ -50,12 +44,20 @@ export const streakRoutes: FastifyPluginAsync = async app => {
       }
 
       const shareText = AchievementService.getShareText(achievementType)
-
-      // Record share action (non-blocking)
       const newlyUnlocked = await AchievementService.checkAndUnlock(userId, 'SHARE_ACTION')
 
       reply.status(200)
       return { shareText, newlyUnlocked }
     }
   )
+}
+
+// GET /achievements — separate prefix, no /streaks nesting
+export const achievementRoutes: FastifyPluginAsync = async app => {
+  app.addHook('preHandler', requireAuth)
+
+  app.get('/', async (req): Promise<GetAchievementsResponse> => {
+    const { userId } = req.user as JwtPayload
+    return AchievementService.getAchievements(userId)
+  })
 }

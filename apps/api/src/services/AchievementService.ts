@@ -1,5 +1,8 @@
 import { prisma } from '@klyovo/db'
+import { getRedisClient } from '../plugins/rateLimit.js'
 import type { AchievementType, AchievementMeta, UnlockedAchievement } from '@klyovo/shared'
+
+const ACHIEVEMENT_CACHE_TTL = 300 // 5 min — shorter than streak cache, changes on unlock
 
 export type TriggerEvent =
   | 'IMPORT_COMPLETED'
@@ -54,29 +57,47 @@ export class AchievementService {
       }
 
       try {
-        const result = await prisma.userAchievement.upsert({
-          where: { userId_achievement: { userId, achievement: candidate.type as never } },
-          create: { userId, achievement: candidate.type as never },
-          update: {}
+        // create() throws on @@unique conflict → achievement already exists
+        await prisma.userAchievement.create({
+          data: { userId, achievement: candidate.type as never }
         })
-        // Only count as newly unlocked if the record was just created
-        // We compare createdAt/unlockedAt proximity to now
-        const ageMs = Date.now() - result.unlockedAt.getTime()
-        if (ageMs < 5000) {
-          newlyUnlocked.push(candidate.type)
-        }
+        // create() succeeded → was genuinely new
+        newlyUnlocked.push(candidate.type)
       } catch {
-        // Ignore errors — achievement unlock is non-critical
+        // Unique constraint violation = already unlocked → skip silently
+        // Any other error → also skip (achievement unlock is non-critical)
       }
     }
 
+    if (newlyUnlocked.length > 0) {
+      // Invalidate cache so next getAchievements reflects new unlocks
+      await AchievementService.invalidateAchievementCache(userId).catch(() => null)
+    }
+
     return newlyUnlocked
+  }
+
+  static async isUnlocked(userId: string, achievementType: AchievementType): Promise<boolean> {
+    const record = await prisma.userAchievement.findUnique({
+      where: { userId_achievement: { userId, achievement: achievementType as never } }
+    })
+    return record !== null
   }
 
   static async getAchievements(userId: string): Promise<{
     unlocked: UnlockedAchievement[]
     locked: AchievementMeta[]
   }> {
+    const cacheKey = `achievements:${userId}`
+    const redis = getRedisClient()
+
+    try {
+      const cached = await redis.get(cacheKey)
+      if (cached) return JSON.parse(cached) as { unlocked: UnlockedAchievement[]; locked: AchievementMeta[] }
+    } catch {
+      // Redis unavailable — fall through to DB
+    }
+
     const userAchievements = await prisma.userAchievement.findMany({
       where: { userId },
       orderBy: { unlockedAt: 'asc' }
@@ -93,7 +114,24 @@ export class AchievementService {
       .filter(type => !unlockedTypes.has(type))
       .map(type => ACHIEVEMENT_CATALOGUE[type])
 
-    return { unlocked, locked }
+    const result = { unlocked, locked }
+
+    try {
+      await redis.set(cacheKey, JSON.stringify(result), 'EX', ACHIEVEMENT_CACHE_TTL)
+    } catch {
+      // Redis unavailable — continue without caching
+    }
+
+    return result
+  }
+
+  static async invalidateAchievementCache(userId: string): Promise<void> {
+    try {
+      const redis = getRedisClient()
+      await redis.del(`achievements:${userId}`)
+    } catch {
+      // Redis unavailable — no-op
+    }
   }
 
   static getShareText(achievementType: AchievementType): string {

@@ -2,6 +2,7 @@
 export default {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
+  setupFiles: ['<rootDir>/jest.setup.js'],
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
     '^@klyovo/shared$': '<rootDir>/../../packages/shared/dist/index.js',

@@ -3,13 +3,27 @@ import { jest, describe, it, beforeEach, expect } from '@jest/globals'
 // Mock Prisma
 const mockPrisma = {
   userAchievement: {
-    upsert: jest.fn<() => Promise<{ id: string; userId: string; achievement: string; unlockedAt: Date }>>(),
+    create: jest.fn<() => Promise<{ id: string; userId: string; achievement: string; unlockedAt: Date }>>(),
+    findUnique: jest.fn<() => Promise<{ id: string; userId: string; achievement: string; unlockedAt: Date } | null>>().mockResolvedValue(null),
     findMany: jest.fn<() => Promise<Array<{ id: string; userId: string; achievement: string; unlockedAt: Date }>>>().mockResolvedValue([])
   }
 }
 
 jest.unstable_mockModule('@klyovo/db', () => ({
   prisma: mockPrisma
+}))
+
+// Mock Redis
+const mockRedis = {
+  get: jest.fn<() => Promise<string | null>>().mockResolvedValue(null),
+  set: jest.fn<() => Promise<string>>().mockResolvedValue('OK'),
+  del: jest.fn<() => Promise<number>>().mockResolvedValue(1)
+}
+
+jest.unstable_mockModule('../plugins/rateLimit.js', () => ({
+  rateLimitPlugin: async () => {},
+  getRedisClient: () => mockRedis,
+  default: async () => {}
 }))
 
 function makeAchievement(type: string, msAgo = 0) {
@@ -26,30 +40,27 @@ describe('AchievementService.checkAndUnlock', () => {
   })
 
   it('unlocks FIRST_IMPORT on IMPORT_COMPLETED', async () => {
-    mockPrisma.userAchievement.upsert.mockResolvedValue(makeAchievement('FIRST_IMPORT') as never)
+    mockPrisma.userAchievement.create.mockResolvedValue(makeAchievement('FIRST_IMPORT') as never)
 
     const result = await AchievementService.checkAndUnlock(userId, 'IMPORT_COMPLETED', { importStreak: 1 })
 
     expect(result).toContain('FIRST_IMPORT')
-    expect(mockPrisma.userAchievement.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { userId_achievement: { userId, achievement: 'FIRST_IMPORT' } }
-      })
+    expect(mockPrisma.userAchievement.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { userId, achievement: 'FIRST_IMPORT' } })
     )
   })
 
   it('does NOT unlock WEEK_STREAK when streak < 7', async () => {
-    mockPrisma.userAchievement.upsert.mockResolvedValue(makeAchievement('FIRST_IMPORT') as never)
+    mockPrisma.userAchievement.create.mockResolvedValue(makeAchievement('FIRST_IMPORT') as never)
 
     const result = await AchievementService.checkAndUnlock(userId, 'IMPORT_COMPLETED', { importStreak: 5 })
 
     expect(result).not.toContain('WEEK_STREAK')
-    // Only FIRST_IMPORT attempted (WEEK_STREAK and MONTH_STREAK conditions not met)
-    expect(mockPrisma.userAchievement.upsert).toHaveBeenCalledTimes(1)
+    expect(mockPrisma.userAchievement.create).toHaveBeenCalledTimes(1)
   })
 
   it('unlocks WEEK_STREAK when streak >= 7', async () => {
-    mockPrisma.userAchievement.upsert
+    mockPrisma.userAchievement.create
       .mockResolvedValueOnce(makeAchievement('FIRST_IMPORT') as never)
       .mockResolvedValueOnce(makeAchievement('WEEK_STREAK') as never)
 
@@ -59,7 +70,7 @@ describe('AchievementService.checkAndUnlock', () => {
   })
 
   it('unlocks MONTH_STREAK when streak >= 30', async () => {
-    mockPrisma.userAchievement.upsert
+    mockPrisma.userAchievement.create
       .mockResolvedValueOnce(makeAchievement('FIRST_IMPORT') as never)
       .mockResolvedValueOnce(makeAchievement('WEEK_STREAK') as never)
       .mockResolvedValueOnce(makeAchievement('MONTH_STREAK') as never)
@@ -70,7 +81,7 @@ describe('AchievementService.checkAndUnlock', () => {
   })
 
   it('unlocks FIRST_ROAST on ROAST_GENERATED', async () => {
-    mockPrisma.userAchievement.upsert.mockResolvedValue(makeAchievement('FIRST_ROAST') as never)
+    mockPrisma.userAchievement.create.mockResolvedValue(makeAchievement('FIRST_ROAST') as never)
 
     const result = await AchievementService.checkAndUnlock(userId, 'ROAST_GENERATED')
 
@@ -78,7 +89,7 @@ describe('AchievementService.checkAndUnlock', () => {
   })
 
   it('unlocks GOAL_COMPLETE on GOAL_STATUS_COMPLETED', async () => {
-    mockPrisma.userAchievement.upsert.mockResolvedValue(makeAchievement('GOAL_COMPLETE') as never)
+    mockPrisma.userAchievement.create.mockResolvedValue(makeAchievement('GOAL_COMPLETE') as never)
 
     const result = await AchievementService.checkAndUnlock(userId, 'GOAL_STATUS_COMPLETED')
 
@@ -86,24 +97,26 @@ describe('AchievementService.checkAndUnlock', () => {
   })
 
   it('unlocks SUBSCRIPTION_KILLER on SUBSCRIPTION_CANCELLED', async () => {
-    mockPrisma.userAchievement.upsert.mockResolvedValue(makeAchievement('SUBSCRIPTION_KILLER') as never)
+    mockPrisma.userAchievement.create.mockResolvedValue(makeAchievement('SUBSCRIPTION_KILLER') as never)
 
     const result = await AchievementService.checkAndUnlock(userId, 'SUBSCRIPTION_CANCELLED')
 
     expect(result).toContain('SUBSCRIPTION_KILLER')
   })
 
-  it('does not count as newly unlocked if achievement was created 10 minutes ago (idempotent)', async () => {
-    // unlockedAt = 10 minutes ago — not "new"
-    mockPrisma.userAchievement.upsert.mockResolvedValue(makeAchievement('FIRST_IMPORT', 10 * 60 * 1000) as never)
+  it('is idempotent: unique constraint error means already unlocked (not newly unlocked)', async () => {
+    // Simulate unique constraint violation (P2002)
+    const err = Object.assign(new Error('Unique constraint'), { code: 'P2002' })
+    mockPrisma.userAchievement.create.mockRejectedValue(err as never)
 
     const result = await AchievementService.checkAndUnlock(userId, 'IMPORT_COMPLETED', { importStreak: 1 })
 
+    // create() threw → NOT in newly unlocked
     expect(result).not.toContain('FIRST_IMPORT')
   })
 
-  it('ignores errors from DB without throwing', async () => {
-    mockPrisma.userAchievement.upsert.mockRejectedValue(new Error('DB error') as never)
+  it('ignores any DB errors without throwing', async () => {
+    mockPrisma.userAchievement.create.mockRejectedValue(new Error('DB error') as never)
 
     const result = await AchievementService.checkAndUnlock(userId, 'ROAST_GENERATED')
 
@@ -111,15 +124,13 @@ describe('AchievementService.checkAndUnlock', () => {
   })
 
   it('attempts REFERRAL_ACE on REFERRAL_CONVERTED_3', async () => {
-    mockPrisma.userAchievement.upsert.mockResolvedValue(makeAchievement('REFERRAL_ACE') as never)
+    mockPrisma.userAchievement.create.mockResolvedValue(makeAchievement('REFERRAL_ACE') as never)
 
     await AchievementService.checkAndUnlock(userId, 'REFERRAL_CONVERTED_3')
 
-    expect(mockPrisma.userAchievement.upsert).toHaveBeenCalledTimes(1)
-    expect(mockPrisma.userAchievement.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { userId_achievement: { userId, achievement: 'REFERRAL_ACE' } }
-      })
+    expect(mockPrisma.userAchievement.create).toHaveBeenCalledTimes(1)
+    expect(mockPrisma.userAchievement.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { userId, achievement: 'REFERRAL_ACE' } })
     )
   })
 })
