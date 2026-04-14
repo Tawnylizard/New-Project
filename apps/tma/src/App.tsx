@@ -10,6 +10,7 @@ import { RoastMode } from './pages/RoastMode.js'
 import { Subscriptions } from './pages/Subscriptions.js'
 import { BNPL } from './pages/BNPL.js'
 import { Paywall } from './pages/Paywall.js'
+import { Goals } from './pages/Goals.js'
 import type { AuthTelegramResponse } from '@klyovo/shared'
 
 export default function App(): JSX.Element {
@@ -41,6 +42,7 @@ export default function App(): JSX.Element {
         <Route path="/roast" element={token ? <RoastMode /> : <Navigate to="/" replace />} />
         <Route path="/subscriptions" element={token ? <Subscriptions /> : <Navigate to="/" replace />} />
         <Route path="/bnpl" element={token ? <BNPL /> : <Navigate to="/" replace />} />
+        <Route path="/goals" element={token ? <Goals /> : <Navigate to="/" replace />} />
         <Route path="/paywall" element={<Paywall />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
