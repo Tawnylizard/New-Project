@@ -262,6 +262,58 @@ export interface ApiError {
   }
 }
 
+// ─── Financial Goals ─────────────────────────────────────────────────────────
+
+export type GoalCategory =
+  | 'SAVINGS'
+  | 'EMERGENCY_FUND'
+  | 'VACATION'
+  | 'GADGET'
+  | 'EDUCATION'
+  | 'HOUSING'
+  | 'OTHER'
+
+export type GoalStatus = 'ACTIVE' | 'COMPLETED' | 'ABANDONED'
+
+export interface FinancialGoal {
+  id: string
+  userId: string
+  name: string
+  category: GoalCategory
+  targetAmountKopecks: number
+  currentAmountKopecks: number
+  deadline: Date | null
+  status: GoalStatus
+  aiAdvice: string | null
+  aiAdviceGeneratedAt: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface CreateGoalInput {
+  name: string
+  category: GoalCategory
+  targetAmountKopecks: number
+  currentAmountKopecks?: number
+  deadline?: string | null
+}
+
+export interface UpdateGoalInput {
+  name?: string
+  currentAmountKopecks?: number
+  deadline?: string | null
+  status?: 'ABANDONED'
+}
+
+export interface GoalListResponse {
+  goals: FinancialGoal[]
+}
+
+export interface GoalAdviceResponse {
+  advice: string
+  generatedAt: string
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export const PLUS_MONTHLY_PRICE_KOPECKS = 19900
