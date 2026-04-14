@@ -35,7 +35,11 @@ export const webhookRoutes: FastifyPluginAsync = async app => {
       `${process.env['YUKASSA_SHOP_ID']}:${YUKASSA_SECRET}`
     ).toString('base64')}`
 
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+    const sigBuf = Buffer.from(signature)
+    const expBuf = Buffer.from(expected)
+    const valid =
+      sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)
+    if (!valid) {
       reply.status(401)
       throw Object.assign(new Error('Invalid webhook signature'), { statusCode: 401 })
     }

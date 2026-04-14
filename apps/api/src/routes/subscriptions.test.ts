@@ -330,3 +330,208 @@ describe('PATCH /subscriptions/:id', () => {
     expect(res.statusCode).toBe(400)
   })
 })
+
+// ─── POST /subscriptions/checkout ─────────────────────────────────────────────
+
+describe('POST /subscriptions/checkout', () => {
+  let app: FastifyInstance
+
+  beforeAll(async () => {
+    process.env['JWT_SECRET'] = 'test_jwt_secret_at_least_32_chars_long_abc'
+    const { buildApp } = await import('../index.js')
+    app = buildApp()
+    await app.ready()
+  })
+
+  afterAll(async () => { await app.close() })
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockFindUniqueOrThrowUser.mockResolvedValue({ id: TEST_USER_ID, telegramId: '999' })
+    mockCreatePayment.mockResolvedValue({
+      paymentId: 'yk-pay-123',
+      confirmationUrl: 'https://yookassa.ru/checkout/yk-pay-123',
+      amount: 19900
+    })
+  })
+
+  it('returns 401 when unauthenticated', async () => {
+    mockRequireAuth.mockImplementationOnce(async () => {
+      throw Object.assign(new Error('Требуется авторизация'), { statusCode: 401, code: 'UNAUTHORIZED' })
+    })
+    const res = await app.inject({
+      method: 'POST',
+      url: '/subscriptions/checkout',
+      payload: { plan: 'plus_monthly', returnUrl: 'https://t.me/klyovobot' }
+    })
+    expect(res.statusCode).toBe(401)
+  })
+
+  it('returns confirmationUrl for plus_monthly', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/subscriptions/checkout',
+      headers: { authorization: 'Bearer mock-token' },
+      payload: { plan: 'plus_monthly', returnUrl: 'https://t.me/klyovobot' }
+    })
+
+    expect(res.statusCode).toBe(200)
+    const body = res.json()
+    expect(body.confirmationUrl).toBe('https://yookassa.ru/checkout/yk-pay-123')
+    expect(body.paymentId).toBe('yk-pay-123')
+    expect(body.amount).toBe(19900)
+  })
+
+  it('returns confirmationUrl for plus_yearly', async () => {
+    mockCreatePayment.mockResolvedValue({
+      paymentId: 'yk-pay-456',
+      confirmationUrl: 'https://yookassa.ru/checkout/yk-pay-456',
+      amount: 149000
+    })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/subscriptions/checkout',
+      headers: { authorization: 'Bearer mock-token' },
+      payload: { plan: 'plus_yearly', returnUrl: 'https://t.me/klyovobot' }
+    })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json().amount).toBe(149000)
+  })
+
+  it('returns 400 for invalid plan value', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/subscriptions/checkout',
+      headers: { authorization: 'Bearer mock-token' },
+      payload: { plan: 'plus_lifetime', returnUrl: 'https://t.me/klyovobot' }
+    })
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('returns 400 for missing returnUrl', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/subscriptions/checkout',
+      headers: { authorization: 'Bearer mock-token' },
+      payload: { plan: 'plus_monthly' }
+    })
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('returns 400 for non-URL returnUrl', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/subscriptions/checkout',
+      headers: { authorization: 'Bearer mock-token' },
+      payload: { plan: 'plus_monthly', returnUrl: 'not-a-url' }
+    })
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('propagates PaymentService error code to response', async () => {
+    mockCreatePayment.mockRejectedValue(
+      Object.assign(new Error('ЮKassa не настроена'), { statusCode: 503, code: 'PAYMENT_FAILED' })
+    )
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/subscriptions/checkout',
+      headers: { authorization: 'Bearer mock-token' },
+      payload: { plan: 'plus_monthly', returnUrl: 'https://t.me/klyovobot' }
+    })
+    expect(res.statusCode).toBe(503)
+    expect(res.json().error.code).toBe('PAYMENT_FAILED')
+  })
+})
+
+// ─── GET /subscriptions/status ────────────────────────────────────────────────
+
+describe('GET /subscriptions/status', () => {
+  let app: FastifyInstance
+
+  beforeAll(async () => {
+    process.env['JWT_SECRET'] = 'test_jwt_secret_at_least_32_chars_long_abc'
+    const { buildApp } = await import('../index.js')
+    app = buildApp()
+    await app.ready()
+  })
+
+  afterAll(async () => { await app.close() })
+
+  beforeEach(() => { jest.clearAllMocks() })
+
+  it('returns 401 when unauthenticated', async () => {
+    mockRequireAuth.mockImplementationOnce(async () => {
+      throw Object.assign(new Error('Требуется авторизация'), { statusCode: 401, code: 'UNAUTHORIZED' })
+    })
+    const res = await app.inject({ method: 'GET', url: '/subscriptions/status' })
+    expect(res.statusCode).toBe(401)
+  })
+
+  it('returns plan=FREE and isActive=false for free user', async () => {
+    mockFindUniqueOrThrowUser.mockResolvedValue({
+      id: TEST_USER_ID, plan: 'FREE', planExpiresAt: null
+    })
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/subscriptions/status',
+      headers: { authorization: 'Bearer mock-token' }
+    })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toMatchObject({ plan: 'FREE', planExpiresAt: null, isActive: false })
+  })
+
+  it('returns isActive=true for PLUS user with future expiry', async () => {
+    const future = new Date(Date.now() + 86400_000 * 30)
+    mockFindUniqueOrThrowUser.mockResolvedValue({
+      id: TEST_USER_ID, plan: 'PLUS', planExpiresAt: future
+    })
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/subscriptions/status',
+      headers: { authorization: 'Bearer mock-token' }
+    })
+
+    expect(res.statusCode).toBe(200)
+    const body = res.json()
+    expect(body.plan).toBe('PLUS')
+    expect(body.isActive).toBe(true)
+    expect(body.planExpiresAt).toBe(future.toISOString())
+  })
+
+  it('returns isActive=false for PLUS user with past expiry', async () => {
+    const past = new Date(Date.now() - 86400_000)
+    mockFindUniqueOrThrowUser.mockResolvedValue({
+      id: TEST_USER_ID, plan: 'PLUS', planExpiresAt: past
+    })
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/subscriptions/status',
+      headers: { authorization: 'Bearer mock-token' }
+    })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json().isActive).toBe(false)
+  })
+
+  it('returns isActive=true for PLUS user with null expiry (lifetime)', async () => {
+    mockFindUniqueOrThrowUser.mockResolvedValue({
+      id: TEST_USER_ID, plan: 'PLUS', planExpiresAt: null
+    })
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/subscriptions/status',
+      headers: { authorization: 'Bearer mock-token' }
+    })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json().isActive).toBe(true)
+  })
+})

@@ -220,6 +220,12 @@ export interface CheckoutResponse {
   amount: number
 }
 
+export interface SubscriptionStatusResponse {
+  plan: Plan
+  planExpiresAt: string | null
+  isActive: boolean
+}
+
 // ─── Error types ──────────────────────────────────────────────────────────────
 
 export interface ReferralStatsResponse {

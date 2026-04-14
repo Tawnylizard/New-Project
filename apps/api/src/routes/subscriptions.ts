@@ -5,7 +5,7 @@ import { requireAuth } from '../plugins/jwt.js'
 import { PaymentService } from '../services/PaymentService.js'
 import { SubscriptionDetector } from '../services/SubscriptionDetector.js'
 import type { JwtPayload } from '../plugins/jwt.js'
-import type { SubscriptionListResponse, CheckoutResponse, ScanSubscriptionsResponse } from '@klyovo/shared'
+import type { SubscriptionListResponse, CheckoutResponse, ScanSubscriptionsResponse, SubscriptionStatusResponse } from '@klyovo/shared'
 import { PLUS_MONTHLY_PRICE_KOPECKS, PLUS_YEARLY_PRICE_KOPECKS } from '@klyovo/shared'
 
 type DetectedSubscription = Prisma.DetectedSubscriptionGetPayload<object>
@@ -119,6 +119,21 @@ export const subscriptionRoutes: FastifyPluginAsync = async app => {
       return { subscription: updated }
     }
   )
+
+  // GET /subscriptions/status — current Клёво Plus plan status for the user
+  app.get('/status', async (req): Promise<SubscriptionStatusResponse> => {
+    const { userId } = req.user as JwtPayload
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } })
+    const now = new Date()
+    const isActive =
+      user.plan === 'PLUS' &&
+      (user.planExpiresAt === null || user.planExpiresAt > now)
+    return {
+      plan: user.plan,
+      planExpiresAt: user.planExpiresAt ? user.planExpiresAt.toISOString() : null,
+      isActive
+    }
+  })
 
   // POST /subscriptions/checkout — start ЮKassa payment for Клёво Плюс
   app.post<{ Body: z.infer<typeof checkoutSchema> }>(
