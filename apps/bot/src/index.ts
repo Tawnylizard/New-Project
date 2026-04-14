@@ -32,7 +32,7 @@ function bankSelectKeyboard() {
 
 function openAppKeyboard(label = '🔥 Открыть Клёво') {
   return {
-    inline_keyboard: [[{ text: label, web_app: { url: TMA_URL } }]]
+    inline_keyboard: [[{ text: label, url: TMA_URL }]]
   }
 }
 
@@ -155,6 +155,12 @@ bot.callbackQuery('bank:other', async ctx => {
       }
     }
   )
+})
+
+// ─── Error handler ────────────────────────────────────────────────────────────
+
+bot.catch(err => {
+  console.error('Bot error:', err.message)
 })
 
 // ─── Bot commands menu ────────────────────────────────────────────────────────
