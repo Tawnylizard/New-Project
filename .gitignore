@@ -43,6 +43,10 @@ pnpm-debug.log*
 
 # ─── Prisma ──────────────────────────────────────────────────────────────────
 packages/db/generated/
+packages/db/seed.js
+packages/db/seed.js.map
+packages/db/seed.d.ts
+packages/db/seed.d.ts.map
 
 # ─── OS & Editor ─────────────────────────────────────────────────────────────
 .DS_Store
