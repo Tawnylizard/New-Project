@@ -193,3 +193,26 @@ Response 200:
   ]
 }
 ```
+
+### POST /streaks/share
+Trigger: user taps "Поделиться" on an achievement. Records SOCIAL_SHARER event.
+
+Request body:
+```json
+{ "achievementType": "FIRST_IMPORT" }
+```
+
+Response 200:
+```json
+{
+  "shareText": "📂 Первый шаг — я начал следить за финансами в Клёво! 🔥",
+  "newlyUnlocked": ["SOCIAL_SHARER"]
+}
+```
+
+Response 400: `{ "error": { "code": "ACHIEVEMENT_NOT_UNLOCKED", "message": "Ачивка не разблокирована" } }`
+
+### Performance (NFR → AC reference)
+- `GET /streaks`: p99 < 100ms (Redis cache hit); p99 < 300ms (DB fallback)
+- `GET /achievements`: p99 < 200ms
+- `POST /streaks/share`: p99 < 150ms

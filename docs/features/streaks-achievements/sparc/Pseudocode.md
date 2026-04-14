@@ -64,6 +64,9 @@ OUTPUT: { newStreak: Int, wasReset: Boolean }
 
 ```
 FUNCTION updateImportStreak(userId, actionDate):
+  // actionDate MUST be computed server-side in UTC+3 (Moscow time)
+  // Use: new Date().toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' })
+  // → convert to Date-only for comparison (strip time component)
   streak = GET UserStreak WHERE userId = userId
            OR CREATE new UserStreak for userId with all zeros
   
