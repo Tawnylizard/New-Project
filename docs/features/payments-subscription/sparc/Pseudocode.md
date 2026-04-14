@@ -14,6 +14,10 @@ STEPS:
 3. amountRub ← (amountKopecks / 100).toFixed(2)
 4. description ← plan === 'plus_monthly' ? 'Клёво Плюс — 1 месяц' : 'Клёво Плюс — 1 год'
 5. idempotenceKey ← `${userId}-${plan}-${Date.now()}`
+   // Intentionally unique per attempt: ЮKassa idempotency prevents HTTP retries of the
+   // SAME request; our own duplicate-activation guard is yookassaPaymentId UNIQUE constraint.
+   // A deterministic key (no timestamp) would block the same user from starting a new payment
+   // after cancelling the previous one.
 
 6. POST https://api.yookassa.ru/v3/payments
    Headers: Authorization: Basic base64(shopId:secret)
@@ -54,7 +58,10 @@ STEPS:
 8. IF missing userId or plan → LOG warn, RETURN { ok: true }
 
 9. existing ← prisma.klyovoSubscription.findUnique(yookassaPaymentId)
-10. IF existing → RETURN { ok: true }  // idempotent
+10. IF existing → RETURN { ok: true }  // idempotent (soft check)
+   // Hard guarantee: yookassaPaymentId has @unique DB constraint — concurrent duplicate
+   // webhooks will throw on prisma.create, which is caught by error handler → 500 logged.
+   // ЮKassa retries on 5xx, but the second attempt hits soft check → 200 ok.
 
 11. now ← new Date()
 12. expiresAt ← plan === 'plus_monthly' ? now + 30d : now + 365d
@@ -76,6 +83,7 @@ OUTPUT: { plan, planExpiresAt, isActive }
 STEPS:
 1. user ← prisma.user.findUniqueOrThrow({ where: { id: userId } })
 2. isActive ← user.plan === 'PLUS' AND (planExpiresAt === null OR planExpiresAt > now)
+   // null planExpiresAt = lifetime (admin grant); OR short-circuits correctly in TypeScript
 3. RETURN { plan: user.plan, planExpiresAt: user.planExpiresAt, isActive }
 ```
 
