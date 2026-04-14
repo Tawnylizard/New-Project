@@ -162,7 +162,7 @@
       "id": "streaks-achievements",
       "name": "Стрики и ачивки",
       "description": "Gamification: saving streaks, spending achievements",
-      "status": "next",
+      "status": "done",
       "priority": "should_have",
       "moscow": "S",
       "phase": "v1.0",
