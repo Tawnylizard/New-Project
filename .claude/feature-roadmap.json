@@ -1,7 +1,7 @@
 {
   "project": "Клёво",
   "version": "0.1.0-mvp",
-  "last_updated": "2026-04-13",
+  "last_updated": "2026-04-14",
   "features": [
     {
       "id": "telegram-auth",
@@ -140,20 +140,29 @@
       "id": "financial-goals",
       "name": "Финансовые цели с AI",
       "description": "Set savings goals, AI recommendations, progress tracking",
-      "status": "planned",
+      "status": "done",
       "priority": "should_have",
       "moscow": "S",
       "phase": "v1.0",
       "depends_on": [
         "payments-subscription"
       ],
-      "files": []
+      "files": [
+        "packages/db/prisma/schema.prisma",
+        "packages/shared/src/types.ts",
+        "apps/api/src/services/GoalService.ts",
+        "apps/api/src/routes/goals.ts",
+        "apps/tma/src/pages/Goals.tsx",
+        "apps/tma/src/components/GoalCard.tsx",
+        "apps/tma/src/components/CreateGoalModal.tsx",
+        "apps/tma/src/components/UpdateProgressModal.tsx"
+      ]
     },
     {
       "id": "streaks-achievements",
       "name": "Стрики и ачивки",
       "description": "Gamification: saving streaks, spending achievements",
-      "status": "planned",
+      "status": "next",
       "priority": "should_have",
       "moscow": "S",
       "phase": "v1.0",
