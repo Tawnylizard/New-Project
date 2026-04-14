@@ -1,6 +1,6 @@
 {
   "project": "Клёво",
-  "version": "0.1.0-mvp",
+  "version": "0.2.0-v1",
   "last_updated": "2026-04-14",
   "features": [
     {
@@ -169,7 +169,12 @@
       "depends_on": [
         "spending-dashboard"
       ],
-      "files": []
+      "files": [
+        "apps/api/src/services/AchievementService.ts",
+        "apps/api/src/services/StreakService.ts",
+        "apps/api/src/routes/streaks.ts",
+        "apps/api/src/jobs/spendingStreakCron.ts"
+      ]
     }
   ]
 }
