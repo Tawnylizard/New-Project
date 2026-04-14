@@ -67,6 +67,8 @@ model User {
   klyovoSubs        KlyovoSubscription[]
   bnplObligations   BnplObligation[]
   financialGoals    FinancialGoal[]
+  userStreak        UserStreak?
+  achievements      UserAchievement[]
 }
 
 model Transaction {
@@ -198,4 +200,43 @@ model FinancialGoal {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
+}
+
+enum AchievementType {
+  FIRST_IMPORT
+  WEEK_STREAK
+  MONTH_STREAK
+  FIRST_ROAST
+  GOAL_COMPLETE
+  SUBSCRIPTION_KILLER
+  BUDGET_MASTER
+  SOCIAL_SHARER
+  REFERRAL_ACE
+}
+
+model UserStreak {
+  id                    String    @id @default(uuid())
+  userId                String    @unique
+  importStreak          Int       @default(0)
+  importStreakLongest   Int       @default(0)
+  importLastDate        DateTime? @db.Date
+  spendingStreak        Int       @default(0)
+  spendingStreakLongest Int       @default(0)
+  spendingLastWeek      String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserAchievement {
+  id          String          @id @default(uuid())
+  userId      String
+  achievement AchievementType
+  unlockedAt  DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievement])
+  @@index([userId])
 }

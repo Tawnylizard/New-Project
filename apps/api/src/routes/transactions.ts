@@ -5,6 +5,8 @@ import { requireAuth } from '../plugins/jwt.js'
 import { CsvParser } from '../services/CsvParser.js'
 import { SubscriptionDetector } from '../services/SubscriptionDetector.js'
 import { AnalyticsService } from '../services/AnalyticsService.js'
+import { StreakService } from '../services/StreakService.js'
+import { AchievementService } from '../services/AchievementService.js'
 import type { JwtPayload } from '../plugins/jwt.js'
 import type { ImportTransactionsResponse } from '@klyovo/shared'
 
@@ -117,6 +119,12 @@ export const transactionRoutes: FastifyPluginAsync = async app => {
 
       // Invalidate analytics cache after import
       await AnalyticsService.invalidateCache(userId)
+
+      // Update import streak + check achievements (non-blocking)
+      const streakResult = await StreakService.updateImportStreak(userId).catch(() => null)
+      await AchievementService.checkAndUnlock(userId, 'IMPORT_COMPLETED', {
+        importStreak: streakResult?.newStreak ?? 0
+      }).catch(() => null)
 
       const dates = parsed.map(t => t.transactionDate)
       const minDate = dates.reduce((a, b) => (a < b ? a : b))

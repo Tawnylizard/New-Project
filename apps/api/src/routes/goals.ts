@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@klyovo/db'
 import { requireAuth } from '../plugins/jwt.js'
 import { GoalService } from '../services/GoalService.js'
+import { AchievementService } from '../services/AchievementService.js'
 import type { JwtPayload } from '../plugins/jwt.js'
 import type { GoalListResponse, GoalAdviceResponse } from '@klyovo/shared'
 
@@ -87,6 +88,11 @@ export const goalRoutes: FastifyPluginAsync = async app => {
       if (body.status !== undefined) updateParams.status = body.status
 
       const updated = await GoalService.update(updateParams)
+
+      // Check GOAL_COMPLETE achievement when goal reaches COMPLETED status (non-blocking)
+      if (updated.status === 'COMPLETED') {
+        AchievementService.checkAndUnlock(userId, 'GOAL_STATUS_COMPLETED').catch(() => null)
+      }
 
       reply.status(200)
       return { data: updated }

@@ -314,6 +314,61 @@ export interface GoalAdviceResponse {
   generatedAt: string
 }
 
+// ─── Streaks & Achievements ───────────────────────────────────────────────────
+
+export type AchievementType =
+  | 'FIRST_IMPORT'
+  | 'WEEK_STREAK'
+  | 'MONTH_STREAK'
+  | 'FIRST_ROAST'
+  | 'GOAL_COMPLETE'
+  | 'SUBSCRIPTION_KILLER'
+  | 'BUDGET_MASTER'
+  | 'SOCIAL_SHARER'
+  | 'REFERRAL_ACE'
+
+export interface AchievementMeta {
+  type: AchievementType
+  emoji: string
+  name: string
+  description: string
+}
+
+export interface UnlockedAchievement extends AchievementMeta {
+  unlockedAt: string
+}
+
+export interface StreakData {
+  current: number
+  longest: number
+  lastActiveDate?: string
+}
+
+export interface SpendingStreakData {
+  current: number
+  longest: number
+  lastComputedWeek?: string
+}
+
+export interface GetStreaksResponse {
+  importStreak: StreakData
+  spendingStreak: SpendingStreakData
+}
+
+export interface GetAchievementsResponse {
+  unlocked: UnlockedAchievement[]
+  locked: AchievementMeta[]
+}
+
+export interface ShareAchievementRequest {
+  achievementType: AchievementType
+}
+
+export interface ShareAchievementResponse {
+  shareText: string
+  newlyUnlocked: AchievementType[]
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export const PLUS_MONTHLY_PRICE_KOPECKS = 19900

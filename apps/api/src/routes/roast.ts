@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma, type Prisma } from '@klyovo/db'
 import { requireAuth } from '../plugins/jwt.js'
 import { RoastGenerator } from '../services/RoastGenerator.js'
+import { AchievementService } from '../services/AchievementService.js'
 import type { JwtPayload } from '../plugins/jwt.js'
 import type { GenerateRoastResponse } from '@klyovo/shared'
 import { FREE_ROAST_LIMIT_PER_MONTH } from '@klyovo/shared'
@@ -105,6 +106,9 @@ export const roastRoutes: FastifyPluginAsync = async app => {
           mode
         }
       })
+
+      // Check FIRST_ROAST achievement (non-blocking)
+      AchievementService.checkAndUnlock(userId, 'ROAST_GENERATED').catch(() => null)
 
       const BOT_USERNAME = process.env['TELEGRAM_BOT_USERNAME'] ?? 'klyovobot'
 

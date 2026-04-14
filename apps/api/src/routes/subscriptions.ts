@@ -4,6 +4,7 @@ import { prisma, type Prisma } from '@klyovo/db'
 import { requireAuth } from '../plugins/jwt.js'
 import { PaymentService } from '../services/PaymentService.js'
 import { SubscriptionDetector } from '../services/SubscriptionDetector.js'
+import { AchievementService } from '../services/AchievementService.js'
 import type { JwtPayload } from '../plugins/jwt.js'
 import type { SubscriptionListResponse, CheckoutResponse, ScanSubscriptionsResponse, SubscriptionStatusResponse } from '@klyovo/shared'
 import { PLUS_MONTHLY_PRICE_KOPECKS, PLUS_YEARLY_PRICE_KOPECKS } from '@klyovo/shared'
@@ -116,6 +117,11 @@ export const subscriptionRoutes: FastifyPluginAsync = async app => {
         where: { id: sub.id },
         data: { status: validStatus }
       })
+
+      // Check SUBSCRIPTION_KILLER achievement on cancel (non-blocking)
+      if (validStatus === 'cancelled') {
+        AchievementService.checkAndUnlock(userId, 'SUBSCRIPTION_CANCELLED').catch(() => null)
+      }
 
       return { subscription: updated }
     }

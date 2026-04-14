@@ -12,7 +12,9 @@ import { analyticsRoutes } from './routes/analytics.js'
 import { bnplRoutes } from './routes/bnpl.js'
 import { referralRoutes } from './routes/referral.js'
 import { goalRoutes } from './routes/goals.js'
+import { streakRoutes } from './routes/streaks.js'
 import { rateLimitPlugin } from './plugins/rateLimit.js'
+import { SPENDING_STREAK_CRON, runSpendingStreakJob } from './jobs/spendingStreakCron.js'
 import { MAX_CSV_SIZE_BYTES } from '@klyovo/shared'
 
 const PORT = Number(process.env['PORT'] ?? 3000)
@@ -60,6 +62,7 @@ export function buildApp(): ReturnType<typeof Fastify> {
   app.register(bnplRoutes, { prefix: '/bnpl' })
   app.register(referralRoutes, { prefix: '/referral' })
   app.register(goalRoutes, { prefix: '/goals' })
+  app.register(streakRoutes, { prefix: '/streaks' })
 
   // ─── Health ───────────────────────────────────────────────────────────────
   app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }))
@@ -86,6 +89,13 @@ async function start(): Promise<void> {
   try {
     await app.listen({ port: PORT, host: HOST })
     app.log.info(`API listening on http://${HOST}:${PORT}`)
+
+    // Schedule spending streak cron (every Sunday at 23:59 UTC+3 = 20:59 UTC)
+    const { default: cron } = await import('node-cron')
+    cron.schedule(SPENDING_STREAK_CRON, () => {
+      runSpendingStreakJob().catch(err => app.log.error(err, 'spendingStreakCron failed'))
+    })
+    app.log.info(`Spending streak cron scheduled: ${SPENDING_STREAK_CRON}`)
   } catch (err) {
     app.log.error(err)
     process.exit(1)

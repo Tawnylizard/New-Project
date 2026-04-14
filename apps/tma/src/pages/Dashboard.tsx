@@ -5,6 +5,7 @@ import { apiClient } from '../api/client.js'
 import { useAppStore } from '../store/useAppStore.js'
 import { SpendingChart } from '../components/SpendingChart.js'
 import { TransactionList } from '../components/TransactionList.js'
+import { StreakWidget } from '../components/StreakWidget.js'
 import type { AnalyticsSummaryResponse, AnalyticsPeriod, Transaction } from '@klyovo/shared'
 
 interface TransactionsResponse {
@@ -65,6 +66,9 @@ export function Dashboard(): JSX.Element {
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Streak widget */}
+        <StreakWidget />
+
         {/* Roast CTA */}
         <button
           onClick={() => navigate('/roast')}
