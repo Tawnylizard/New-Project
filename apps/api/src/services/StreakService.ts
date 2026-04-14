@@ -80,18 +80,21 @@ export class StreakService {
     spendingStreakLongest: number
     spendingLastWeek: string | null
   } | null) {
+    const lastActiveDate = streak?.importLastDate
+      ? streak.importLastDate.toISOString().split('T')[0]
+      : undefined
+    const lastComputedWeek = streak?.spendingLastWeek ?? undefined
+
     return {
       importStreak: {
         current: streak?.importStreak ?? 0,
         longest: streak?.importStreakLongest ?? 0,
-        lastActiveDate: streak?.importLastDate
-          ? streak.importLastDate.toISOString().split('T')[0]
-          : undefined
+        ...(lastActiveDate !== undefined && { lastActiveDate })
       },
       spendingStreak: {
         current: streak?.spendingStreak ?? 0,
         longest: streak?.spendingStreakLongest ?? 0,
-        lastComputedWeek: streak?.spendingLastWeek ?? undefined
+        ...(lastComputedWeek !== undefined && { lastComputedWeek })
       }
     }
   }
