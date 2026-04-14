@@ -168,20 +168,35 @@ async function registerCommands() {
   ])
 }
 
-// ─── Webhook server ───────────────────────────────────────────────────────────
+// ─── Start: polling (dev) or webhook (prod) ───────────────────────────────────
 
-const app = Fastify({ logger: { level: 'info' } })
-const PORT = Number(process.env['PORT'] ?? 3001)
+const WEBHOOK_URL = process.env['WEBHOOK_URL']
 
-app.post(`/webhook/${BOT_TOKEN}`, webhookCallback(bot, 'fastify'))
-app.get('/health', async () => ({ status: 'ok' }))
+if (WEBHOOK_URL) {
+  // Production: webhook via Fastify
+  const app = Fastify({ logger: { level: 'info' } })
+  const PORT = Number(process.env['PORT'] ?? 3001)
 
-app.listen({ port: PORT, host: '0.0.0.0' })
-  .then(async () => {
-    console.info(`Bot webhook server listening on port ${PORT}`)
-    await registerCommands()
-  })
-  .catch(err => {
-    console.error(err)
-    process.exit(1)
-  })
+  app.post(`/webhook/${BOT_TOKEN}`, webhookCallback(bot, 'fastify'))
+  app.get('/health', async () => ({ status: 'ok' }))
+
+  app.listen({ port: PORT, host: '0.0.0.0' })
+    .then(async () => {
+      console.info(`Bot webhook server listening on port ${PORT}`)
+      await bot.api.setWebhook(`${WEBHOOK_URL}/webhook/${BOT_TOKEN}`)
+      await registerCommands()
+    })
+    .catch(err => {
+      console.error(err)
+      process.exit(1)
+    })
+} else {
+  // Development: long polling (no public URL needed)
+  console.info('Starting bot in polling mode (dev)')
+  registerCommands()
+    .then(() => bot.start())
+    .catch(err => {
+      console.error(err)
+      process.exit(1)
+    })
+}
