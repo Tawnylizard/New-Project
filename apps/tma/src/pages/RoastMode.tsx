@@ -3,12 +3,14 @@ import { useMutation } from '@tanstack/react-query'
 import { apiClient } from '../api/client.js'
 import { useAppStore } from '../store/useAppStore.js'
 import { RoastCard } from '../components/RoastCard.js'
+import { ShareModal } from '../components/ShareModal.js'
 import type { GenerateRoastResponse, RoastMode as RoastModeType } from '@klyovo/shared'
 
 export function RoastMode(): JSX.Element {
   const { user } = useAppStore()
   const [mode, setMode] = useState<RoastModeType>('harsh')
   const [roast, setRoast] = useState<GenerateRoastResponse | null>(null)
+  const [showShareModal, setShowShareModal] = useState(false)
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -18,15 +20,8 @@ export function RoastMode(): JSX.Element {
     onSuccess: data => setRoast(data)
   })
 
-  const handleShare = async (): Promise<void> => {
-    if (!roast) return
-    await apiClient.post(`/roast/${roast.roastId}/share`)
-
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.openTelegramLink(roast.shareUrl)
-    } else {
-      await navigator.clipboard.writeText(roast.roastText + '\n\n' + roast.shareUrl)
-    }
+  const handleShare = (): void => {
+    setShowShareModal(true)
   }
 
   if (mutation.error) {
@@ -94,6 +89,10 @@ export function RoastMode(): JSX.Element {
       <p className="text-xs text-tg-hint text-center">
         Это информационный сервис, не финансовый советник
       </p>
+
+      {showShareModal && roast && (
+        <ShareModal roast={roast} onClose={() => setShowShareModal(false)} />
+      )}
     </div>
   )
 }

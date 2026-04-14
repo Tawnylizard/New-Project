@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAppStore } from './store/useAppStore.js'
 import { apiClient } from './api/client.js'
+import { useReferralRegister } from './hooks/useReferralRegister.js'
 import { Welcome } from './pages/Welcome.js'
 import { Onboarding } from './pages/Onboarding.js'
 import { Dashboard } from './pages/Dashboard.js'
@@ -13,6 +14,7 @@ import type { AuthTelegramResponse } from '@klyovo/shared'
 
 export default function App(): JSX.Element {
   const { token, setAuth } = useAppStore()
+  useReferralRegister()
 
   // Auto-auth via Telegram initData on mount
   useEffect(() => {
