@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client.js'
-import type { CheckoutResponse, KlyovoSubscriptionPlan } from '@klyovo/shared'
+import type { CheckoutResponse, KlyovoSubscriptionPlan, SubscriptionStatusResponse } from '@klyovo/shared'
 import { PLUS_MONTHLY_PRICE_KOPECKS, PLUS_YEARLY_PRICE_KOPECKS } from '@klyovo/shared'
 
 const FEATURES = [
@@ -16,6 +16,12 @@ const FEATURES = [
 export function Paywall(): JSX.Element {
   const navigate = useNavigate()
   const [selectedPlan, setSelectedPlan] = useState<KlyovoSubscriptionPlan>('plus_monthly')
+
+  const { data: subStatus, isLoading: statusLoading } = useQuery<SubscriptionStatusResponse>({
+    queryKey: ['subscription-status'],
+    queryFn: () => apiClient.get<SubscriptionStatusResponse>('/subscriptions/status').then(r => r.data),
+    staleTime: 60_000
+  })
 
   const checkout = useMutation({
     mutationFn: (plan: KlyovoSubscriptionPlan) =>
@@ -33,6 +39,40 @@ export function Paywall(): JSX.Element {
       }
     }
   })
+
+  const handleBack = (): void => {
+    if (window.history.length > 1) {
+      navigate(-1)
+    } else {
+      navigate('/')
+    }
+  }
+
+  if (statusLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-tg-bg">
+        <p className="text-tg-hint text-sm">Загрузка...</p>
+      </div>
+    )
+  }
+
+  if (subStatus?.isActive) {
+    const expiresAt = subStatus.planExpiresAt
+      ? new Date(subStatus.planExpiresAt).toLocaleDateString('ru-RU')
+      : null
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-tg-bg space-y-4">
+        <div className="text-5xl">⭐️</div>
+        <h2 className="text-xl font-bold text-tg-text">Клёво Плюс активен</h2>
+        {expiresAt && (
+          <p className="text-tg-hint text-sm">Действует до {expiresAt}</p>
+        )}
+        <button onClick={handleBack} className="text-tg-button text-sm font-medium">
+          Назад
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-tg-bg p-4 space-y-6">
@@ -103,7 +143,7 @@ export function Paywall(): JSX.Element {
       </button>
 
       <button
-        onClick={() => navigate(-1)}
+        onClick={handleBack}
         className="w-full text-tg-hint text-sm py-2"
       >
         Назад

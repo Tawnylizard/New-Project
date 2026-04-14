@@ -38,7 +38,9 @@ export function buildApp(): ReturnType<typeof Fastify> {
   })
 
   app.register(jwt, {
-    secret: JWT_SECRET
+    secret: JWT_SECRET,
+    sign: { algorithm: 'HS256' },
+    verify: { algorithms: ['HS256'] }
   })
 
   app.register(multipart, {

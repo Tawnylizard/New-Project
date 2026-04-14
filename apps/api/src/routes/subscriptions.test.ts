@@ -367,7 +367,7 @@ describe('POST /subscriptions/checkout', () => {
     expect(res.statusCode).toBe(401)
   })
 
-  it('returns confirmationUrl for plus_monthly', async () => {
+  it('calls PaymentService with correct amount for plus_monthly and returns confirmationUrl', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/subscriptions/checkout',
@@ -380,9 +380,14 @@ describe('POST /subscriptions/checkout', () => {
     expect(body.confirmationUrl).toBe('https://yookassa.ru/checkout/yk-pay-123')
     expect(body.paymentId).toBe('yk-pay-123')
     expect(body.amount).toBe(19900)
+
+    // Verify the route passed the correct amount to PaymentService (not just the mock return)
+    const createCall = mockCreatePayment.mock.calls[0]?.[0] as { amount: number; plan: string }
+    expect(createCall.amount).toBe(19900) // PLUS_MONTHLY_PRICE_KOPECKS
+    expect(createCall.plan).toBe('plus_monthly')
   })
 
-  it('returns confirmationUrl for plus_yearly', async () => {
+  it('calls PaymentService with correct amount for plus_yearly', async () => {
     mockCreatePayment.mockResolvedValue({
       paymentId: 'yk-pay-456',
       confirmationUrl: 'https://yookassa.ru/checkout/yk-pay-456',
@@ -398,6 +403,10 @@ describe('POST /subscriptions/checkout', () => {
 
     expect(res.statusCode).toBe(200)
     expect(res.json().amount).toBe(149000)
+
+    const createCall = mockCreatePayment.mock.calls[0]?.[0] as { amount: number; plan: string }
+    expect(createCall.amount).toBe(149000) // PLUS_YEARLY_PRICE_KOPECKS
+    expect(createCall.plan).toBe('plus_yearly')
   })
 
   it('returns 400 for invalid plan value', async () => {

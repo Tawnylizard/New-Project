@@ -1,18 +1,24 @@
 import type { FastifyPluginAsync } from 'fastify'
 import crypto from 'node:crypto'
+import { z } from 'zod'
 import { prisma } from '@klyovo/db'
 
-interface YookassaWebhookPayload {
-  type: string
-  event: string
-  object: {
-    id: string
-    status: string
-    amount: { value: string; currency: string }
-    metadata?: { userId?: string; plan?: string }
-    paid: boolean
-  }
-}
+const yukassaWebhookSchema = z.object({
+  type: z.string(),
+  event: z.string(),
+  object: z.object({
+    id: z.string(),
+    status: z.string(),
+    amount: z.object({ value: z.string(), currency: z.string() }),
+    metadata: z.object({
+      userId: z.string().optional(),
+      plan: z.enum(['plus_monthly', 'plus_yearly']).optional()
+    }).optional(),
+    paid: z.boolean()
+  })
+})
+
+type YookassaWebhookPayload = z.infer<typeof yukassaWebhookSchema>
 
 export const webhookRoutes: FastifyPluginAsync = async app => {
   // POST /webhooks/yukassa
@@ -44,7 +50,7 @@ export const webhookRoutes: FastifyPluginAsync = async app => {
       throw Object.assign(new Error('Invalid webhook signature'), { statusCode: 401 })
     }
 
-    const payload = req.body
+    const payload = yukassaWebhookSchema.parse(req.body)
     if (payload.event !== 'payment.succeeded' || !payload.object.paid) {
       reply.status(200)
       return { ok: true }
@@ -53,7 +59,7 @@ export const webhookRoutes: FastifyPluginAsync = async app => {
     const paymentId = payload.object.id
     const metadata = payload.object.metadata ?? {}
     const userId = metadata['userId']
-    const plan = metadata['plan'] as 'plus_monthly' | 'plus_yearly' | undefined
+    const plan = metadata['plan'] // typed as 'plus_monthly' | 'plus_yearly' | undefined via Zod
 
     if (!userId || !plan) {
       app.log.warn({ paymentId }, 'Webhook missing userId or plan in metadata')

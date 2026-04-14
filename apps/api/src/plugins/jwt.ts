@@ -13,7 +13,7 @@ export async function requireAuth(req: FastifyRequest, reply: FastifyReply): Pro
   try {
     await req.jwtVerify()
   } catch {
-    reply.status(401).send({
+    return reply.status(401).send({
       error: { code: 'UNAUTHORIZED', message: 'Требуется авторизация' }
     })
   }

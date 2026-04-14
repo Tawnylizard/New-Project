@@ -135,16 +135,22 @@ describe('POST /webhooks/yukassa', () => {
       payload: makePayload({ metadata: { userId: 'user-1', plan: 'plus_monthly' }, id: 'pay-m' })
     })
 
-    const txnCall = mockTransaction.mock.calls[0]?.[0] as unknown[]
-    // Transaction array should contain create + update operations (from prisma.$transaction([...]))
-    expect(txnCall).toHaveLength(2)
+    // klyovoSubscription.create is called with expiresAt ~30 days from now
+    const createCall = mockSubCreate.mock.calls[0]?.[0] as { data: { expiresAt: Date; plan: string } }
+    expect(createCall.data.plan).toBe('plus_monthly')
+    const diffDays = Math.round(
+      (createCall.data.expiresAt.getTime() - before.getTime()) / 86400_000
+    )
+    expect(diffDays).toBe(30)
 
-    // Verify date math via the user.update call inside the transaction
-    // The transaction is called with array of prisma promises - we check it was called
-    expect(mockTransaction).toHaveBeenCalledTimes(1)
+    // user.update also receives the same expiresAt
+    const updateCall = mockUserUpdate.mock.calls[0]?.[0] as { data: { planExpiresAt: Date } }
+    expect(updateCall.data.planExpiresAt).toEqual(createCall.data.expiresAt)
   })
 
   it('sets planExpiresAt +365 days for plus_yearly', async () => {
+    const before = new Date()
+
     await app.inject({
       method: 'POST',
       url: '/webhooks/yukassa',
@@ -152,7 +158,12 @@ describe('POST /webhooks/yukassa', () => {
       payload: makePayload({ metadata: { userId: 'user-1', plan: 'plus_yearly' }, id: 'pay-y' })
     })
 
-    expect(mockTransaction).toHaveBeenCalledTimes(1)
+    const createCall = mockSubCreate.mock.calls[0]?.[0] as { data: { expiresAt: Date; plan: string } }
+    expect(createCall.data.plan).toBe('plus_yearly')
+    const diffDays = Math.round(
+      (createCall.data.expiresAt.getTime() - before.getTime()) / 86400_000
+    )
+    expect(diffDays).toBe(365)
   })
 
   // ─── Idempotency ──────────────────────────────────────────────────────────

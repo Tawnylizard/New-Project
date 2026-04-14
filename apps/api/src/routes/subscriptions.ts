@@ -11,7 +11,8 @@ import { PLUS_MONTHLY_PRICE_KOPECKS, PLUS_YEARLY_PRICE_KOPECKS } from '@klyovo/s
 type DetectedSubscription = Prisma.DetectedSubscriptionGetPayload<object>
 
 function enrichWithAnnualCost(sub: DetectedSubscription): DetectedSubscription & { annualCost: number } {
-  return { ...sub, annualCost: Math.round(sub.estimatedAmount * (365 / sub.frequencyDays)) }
+  // Multiply before divide to avoid float intermediate on kopeck amounts
+  return { ...sub, annualCost: Math.round((sub.estimatedAmount * 365) / sub.frequencyDays) }
 }
 
 const statusQuerySchema = z.object({
@@ -86,8 +87,8 @@ export const subscriptionRoutes: FastifyPluginAsync = async app => {
     let totalAnnual = 0
     for (const s of subs) {
       if (s.status === 'active') {
-        totalMonthly += Math.round(s.estimatedAmount * (30 / s.frequencyDays))
-        totalAnnual += Math.round(s.estimatedAmount * (365 / s.frequencyDays))
+        totalMonthly += Math.round((s.estimatedAmount * 30) / s.frequencyDays)
+        totalAnnual += Math.round((s.estimatedAmount * 365) / s.frequencyDays)
       }
     }
 

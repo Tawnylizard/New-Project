@@ -26,7 +26,10 @@ export class PaymentService {
     }
 
     const { userId, userEmail, plan, amount, returnUrl } = params
-    const idempotenceKey = `${userId}-${plan}-${Date.now()}`
+    // Date-scoped key: deduplicates rapid double-clicks within the same UTC day
+    // but allows a new payment on subsequent days (e.g. re-trying after cancellation).
+    const utcDate = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+    const idempotenceKey = `${userId}-${plan}-${utcDate}`
 
     const amountRub = (amount / 100).toFixed(2)
     const description =
