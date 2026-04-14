@@ -55,6 +55,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production}
       YANDEX_GPT_API_KEY: ${YANDEX_GPT_API_KEY}
       GIGACHAT_API_KEY: ${GIGACHAT_API_KEY}
+      PRISMA_QUERY_ENGINE_LIBRARY: /app/node_modules/.prisma/client/libquery_engine-linux-musl-openssl-3.0.x.so.node
       YUKASSA_SHOP_ID: ${YUKASSA_SHOP_ID}
       YUKASSA_SECRET_KEY: ${YUKASSA_SECRET_KEY}
     ports:

@@ -1,5 +1,6 @@
 FROM node:22-alpine AS base
 WORKDIR /app
+RUN apk add --no-cache openssl
 RUN corepack enable && corepack prepare pnpm@latest --activate 2>/dev/null || true
 
 # ─── dependencies ────────────────────────────────────────────────────────────
