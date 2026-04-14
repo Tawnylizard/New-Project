@@ -222,6 +222,17 @@ export interface CheckoutResponse {
 
 // ─── Error types ──────────────────────────────────────────────────────────────
 
+export interface ReferralStatsResponse {
+  referralCode: string
+  referralLink: string
+  invitedCount: number
+  activeCount: number
+}
+
+export interface ReferralRegisterRequest {
+  referralCode: string
+}
+
 export type ApiErrorCode =
   | 'INVALID_INIT_DATA'
   | 'EXPIRED_INIT_DATA'
@@ -232,6 +243,8 @@ export type ApiErrorCode =
   | 'PAYMENT_FAILED'
   | 'RATE_LIMIT'
   | 'NOT_FOUND'
+  | 'SELF_REFERRAL'
+  | 'REFERRAL_CODE_NOT_FOUND'
   | 'UNAUTHORIZED'
   | 'VALIDATION_ERROR'
   | 'INTERNAL_ERROR'

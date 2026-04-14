@@ -10,6 +10,7 @@ import { subscriptionRoutes } from './routes/subscriptions.js'
 import { webhookRoutes } from './routes/webhooks.js'
 import { analyticsRoutes } from './routes/analytics.js'
 import { bnplRoutes } from './routes/bnpl.js'
+import { referralRoutes } from './routes/referral.js'
 import { rateLimitPlugin } from './plugins/rateLimit.js'
 import { MAX_CSV_SIZE_BYTES } from '@klyovo/shared'
 
@@ -54,6 +55,7 @@ export function buildApp(): ReturnType<typeof Fastify> {
   app.register(webhookRoutes, { prefix: '/webhooks' })
   app.register(analyticsRoutes, { prefix: '/analytics' })
   app.register(bnplRoutes, { prefix: '/bnpl' })
+  app.register(referralRoutes, { prefix: '/referral' })
 
   // ─── Health ───────────────────────────────────────────────────────────────
   app.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }))
